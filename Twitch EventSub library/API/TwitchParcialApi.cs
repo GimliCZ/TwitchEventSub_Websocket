@@ -156,7 +156,7 @@ namespace Twitch_EventSub_library.API
                 }
                 else
                 {
-                   _logger.LogInformation("Response returned null cause of invalid userId or filter parameter");
+                    _logger.LogInformation("Response returned null cause of invalid userId or filter parameter");
                     break;
                 }
 

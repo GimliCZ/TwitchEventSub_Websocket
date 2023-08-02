@@ -36,7 +36,7 @@ namespace Twitch_EventSub_library
         private async Task ManagerOnRefreshTokenRequest(object sender, InvalidAccessTokenException e)
         {
             //I know, this is suboptimal you can subscribe ManagerOnRefreshTokenRequest without further skip
-            await OnRefreshToken.Invoke(this,e);
+            await OnRefreshToken.Invoke(this, e);
         }
 
         /// <summary>
@@ -47,8 +47,8 @@ namespace Twitch_EventSub_library
         /// <returns></returns>
         private async Task SocketOnOutsideDisconnect(object sender, string e)
         {
-           OnUnexpectedConnectionTermination.Invoke(sender,e);
-           await _manager.Stop();
+            OnUnexpectedConnectionTermination.Invoke(sender, e);
+            await _manager.Stop();
         }
         /// <summary>
         /// Revocation messages will probably pile up due big number of requests at same time
@@ -75,7 +75,7 @@ namespace Twitch_EventSub_library
         /// <param name="accessToken"></param>
         /// <param name="listOfSubs"></param>
         /// <returns></returns>
-        public async Task<bool> Start(string clientId, string accessToken, List<SubscriptionTypes.SubscriptionType> listOfSubs)
+        public async Task<bool> Start(string clientId, string accessToken, List<SubscriptionType> listOfSubs)
         {
             StartUp(clientId, accessToken, listOfSubs);
             if (await _socket.ConnectAsync())
@@ -92,7 +92,7 @@ namespace Twitch_EventSub_library
         /// <param name="accessToken"></param>
         /// <param name="listOfSubs"></param>
         /// <returns></returns>
-        public async Task UpdateOnFly(string clientId, string accessToken, List<SubscriptionTypes.SubscriptionType> listOfSubs)
+        public async Task UpdateOnFly(string clientId, string accessToken, List<SubscriptionType> listOfSubs)
         {
             StartUp(clientId, accessToken, listOfSubs);
             await _manager.UpdateOnFly(clientId, accessToken, _listOfSubs);
@@ -104,7 +104,7 @@ namespace Twitch_EventSub_library
         /// <param name="clientId"></param>
         /// <param name="accessToken"></param>
         /// <param name="listOfSubs"></param>
-        private void StartUp(string clientId, string accessToken, List<SubscriptionTypes.SubscriptionType> listOfSubs)
+        private void StartUp(string clientId, string accessToken, List<SubscriptionType> listOfSubs)
         {
             _clientId = clientId;
             _accessToken = accessToken;
@@ -149,8 +149,8 @@ namespace Twitch_EventSub_library
         /// <exception cref="NotImplementedException"></exception>
         private Task SocketOnNotification(object sender, Messages.NotificationMessage.WebSocketNotificationPayload e)
         {
-           // throw new NotImplementedException();
-           return Task.CompletedTask;
+            // throw new NotImplementedException();
+            return Task.CompletedTask;
         }
 
     }

@@ -1,8 +1,8 @@
 ﻿using Newtonsoft.Json;
 
-namespace Twitch_EventSub_library.Messages.NotificationMessage
+namespace Twitch_EventSub_library.Messages.NotificationMessage.Events
 {
-    public class WebSocketNotificationEvent
+    public class FollowEvent : WebSocketNotificationEvent
     {
         [JsonProperty("user_id")]
         public string UserId { get; set; }
@@ -24,8 +24,5 @@ namespace Twitch_EventSub_library.Messages.NotificationMessage
 
         [JsonProperty("followed_at")]
         public string FollowedAt { get; set; }
-
-
-
     }
 }

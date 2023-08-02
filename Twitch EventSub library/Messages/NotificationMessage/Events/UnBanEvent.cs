@@ -1,8 +1,8 @@
 ﻿using Newtonsoft.Json;
 
-namespace Twitch_EventSub_library.Messages.NotificationMessage
+namespace Twitch_EventSub_library.Messages.NotificationMessage.Events
 {
-    public class WebSocketNotificationEvent
+    public class UnBanEvent : WebSocketNotificationEvent
     {
         [JsonProperty("user_id")]
         public string UserId { get; set; }
@@ -22,10 +22,13 @@ namespace Twitch_EventSub_library.Messages.NotificationMessage
         [JsonProperty("broadcaster_user_name")]
         public string BroadcasterUserName { get; set; }
 
-        [JsonProperty("followed_at")]
-        public string FollowedAt { get; set; }
+        [JsonProperty("moderator_user_id")]
+        public string ModeratorUserId { get; set; }
 
+        [JsonProperty("moderator_user_login")]
+        public string ModeratorUserLogin { get; set; }
 
-
+        [JsonProperty("moderator_user_name")]
+        public string ModeratorUserName { get; set; }
     }
 }

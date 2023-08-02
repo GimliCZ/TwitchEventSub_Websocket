@@ -1,8 +1,8 @@
 ﻿using Newtonsoft.Json;
 
-namespace Twitch_EventSub_library.Messages.NotificationMessage
+namespace Twitch_EventSub_library.Messages.NotificationMessage.Events
 {
-    public class WebSocketNotificationEvent
+    public class SubscriptionGiftEvent : WebSocketNotificationEvent
     {
         [JsonProperty("user_id")]
         public string UserId { get; set; }
@@ -22,10 +22,16 @@ namespace Twitch_EventSub_library.Messages.NotificationMessage
         [JsonProperty("broadcaster_user_name")]
         public string BroadcasterUserName { get; set; }
 
-        [JsonProperty("followed_at")]
-        public string FollowedAt { get; set; }
+        [JsonProperty("total")]
+        public int Total { get; set; }
 
+        [JsonProperty("tier")]
+        public string Tier { get; set; }
 
+        [JsonProperty("cumulative_total")] //MAY BE NULL
+        public int? CumulativeTotal { get; set; }
 
+        [JsonProperty("is_anonymous")]
+        public bool IsAnonymous { get; set; }
     }
 }

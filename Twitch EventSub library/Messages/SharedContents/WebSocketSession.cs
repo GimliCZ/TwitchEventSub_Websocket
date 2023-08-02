@@ -11,7 +11,7 @@ namespace Twitch_EventSub_library.Messages.SharedContents
         public string Status { get; set; }
 
         [JsonProperty("keepalive_timeout_seconds")]
-        public int KeepAliveTimeoutSeconds { get; set; }
+        public int? KeepAliveTimeoutSeconds { get; set; }
 
         [JsonProperty("reconnect_url")]
         public string? ReconnectUrl { get; set; }

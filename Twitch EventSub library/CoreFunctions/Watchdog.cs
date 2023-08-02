@@ -71,7 +71,7 @@ namespace Twitch_EventSub_library.CoreFunctions
             _logger.LogDebug("Watchdog timeout! Something went wrong.");
 
             // Raise the WatchdogTimeout event
-            await WatchdogTimeout?.Invoke(this,"Server didn't respond in time")!;
+            await WatchdogTimeout?.Invoke(this, "Server didn't respond in time")!;
         }
     }
 }
