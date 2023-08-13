@@ -1,45 +1,44 @@
 ﻿using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Twitch_EventSub_library.CoreFunctions;
-using Twitch_EventSub_library.Messages;
-using Twitch_EventSub_library.Messages.KeepAliveMessage;
-using Twitch_EventSub_library.Messages.NotificationMessage;
-using Twitch_EventSub_library.Messages.NotificationMessage.Events;
-using Twitch_EventSub_library.Messages.PingMessage;
-using Twitch_EventSub_library.Messages.ReconnectMessage;
-using Twitch_EventSub_library.Messages.RevocationMessage;
-using Twitch_EventSub_library.Messages.SharedContents;
-using Twitch_EventSub_library.Messages.WelcomeMessage;
+using Twitch.EventSub.CoreFunctions;
+using Twitch.EventSub.Messages;
+using Twitch.EventSub.Messages.KeepAliveMessage;
+using Twitch.EventSub.Messages.NotificationMessage;
+using Twitch.EventSub.Messages.NotificationMessage.Events;
+using Twitch.EventSub.Messages.PingMessage;
+using Twitch.EventSub.Messages.ReconnectMessage;
+using Twitch.EventSub.Messages.RevocationMessage;
+using Twitch.EventSub.Messages.SharedContents;
+using Twitch.EventSub.Messages.WelcomeMessage;
+using Twitch.EventSub.Library.CoreFunctions;
+using Twitch.EventSub.Library.Messages.NotificationMessage.Events;
 
-namespace Twitch_EventSub_library
+namespace Twitch.EventSub
 {
     public class EventSubSocketWrapper
     {
         private const string DefaultWebSocketUrl = "wss://eventsub.wss.twitch.tv/ws";
-        private readonly ILogger<EventSubSocketWrapper> _logger;
+        private readonly ILogger _logger;
         private readonly ReplayProtection _replayProtection;
         private bool _awaitForReconnect = false;
         private readonly Watchdog _watchdog;
-#if DEBUG
-        public string _sessionId;
-        public GenericWebsocket _socket;
-#else
-        private string _sessionId;
+
+        public string? SessionId { get; private set; }
+
         private readonly GenericWebsocket _socket;
-#endif
 
         private int _keepAlive;
         private bool _connectionActive;
 
-        public event AsyncEventHandler<string> OnRegisterSubscriptions;
+        public event AsyncEventHandler<string?> OnRegisterSubscriptions;
         public event AsyncEventHandler<WebSocketNotificationPayload> OnNotificationMessage;
         public event AsyncEventHandler<WebSocketRevocationMessage> OnRevocationMessage;
-        public event AsyncEventHandler<string> OnOutsideDisconnect;
+        public event AsyncEventHandler<string?> OnOutsideDisconnect;
 
-        public EventSubSocketWrapper(ILogger<EventSubSocketWrapper> logger,
-            ILogger<GenericWebsocket> socketLogger,
-            ILogger<Watchdog> watchdogLogger,
+        public EventSubSocketWrapper(ILogger logger,
+            ILogger socketLogger,
+            ILogger watchdogLogger,
             TimeSpan processingSpeed)
         {
             _socket = new GenericWebsocket(socketLogger, processingSpeed);
@@ -55,7 +54,7 @@ namespace Twitch_EventSub_library
         {
             _logger.LogInformation(e);
             _connectionActive = false;
-            await OnOutsideDisconnect.Invoke(this, e);
+            await OnOutsideDisconnect.TryInvoke(this, e);
         }
 
         public async Task<bool> ConnectAsync(string connectUrl = DefaultWebSocketUrl)
@@ -99,21 +98,19 @@ namespace Twitch_EventSub_library
                     _logger.LogError("Error while parsing WebSocket message: " + ex.Message, ex);
                     return Task.CompletedTask;
                 }
-#if !DEBUG
-                
 
-                if (message == null ||
-                    _replayProtection.IsDuplicate(message.Metadata.MessageId) ||
+
+                if (_replayProtection.IsDuplicate(message.Metadata.MessageId) ||
                     !_replayProtection.IsUpToDate(message.Metadata.MessageTimestamp))
                 {
                     return Task.CompletedTask;
                 }
-#endif
+
                 return message switch
                 {
                     WebSocketWelcomeMessage welcomeMessage => WelcomeMessageProcessing(welcomeMessage),
-                    WebSocketKeepAliveMessage keepAliveMessage => KeepAliveMessageProcessing(keepAliveMessage),
-                    WebSocketPingMessage pingMessage => PingMessageProcessing(pingMessage),
+                    WebSocketKeepAliveMessage => KeepAliveMessageProcessing(),
+                    WebSocketPingMessage => PingMessageProcessing(),
                     WebSocketNotificationMessage notificationMessage => NotificationMessageProcessing(notificationMessage),
                     WebSocketReconnectMessage reconnectMessage => ReconnectMessageProcessing(reconnectMessage),
                     WebSocketRevocationMessage revocationMessage => RevocationMessageProcessing(revocationMessage),
@@ -128,31 +125,32 @@ namespace Twitch_EventSub_library
             }
         }
 
-        private WebSocketMessage DeserializeMessage(string message)
+        private static WebSocketMessage DeserializeMessage(string message)
         {
             JObject jsonObject = JObject.Parse(message);
 
-            if (!jsonObject.TryGetValue("metadata", out JToken? metadataToken) || !(metadataToken is JObject metadataObject))
+            if (!jsonObject.TryGetValue("metadata", out JToken? metadataToken) || !(metadataToken is JObject))
             {
                 throw new JsonSerializationException("metadata is missing in the JSON object");
             }
             var metadata = metadataToken.ToObject<WebSocketMessageMetadata>();
+            if (metadata == null)
+            {
+                throw new JsonSerializationException();
+            }
+            string messageType = metadata.MessageType;
 
-            string messageType = metadata?.MessageType;
-
-            if (!jsonObject.TryGetValue("payload", out JToken? payloadToken) || !(payloadToken is JObject payloadObject))
+            if (!jsonObject.TryGetValue("payload", out JToken? payloadToken) || !(payloadToken is JObject))
             {
                 throw new JsonSerializationException("metadata is missing in the JSON object");
             }
-
-
 
             return messageType switch
             {
                 "session_welcome" => new WebSocketWelcomeMessage()
                 {
                     Metadata = metadata,
-                    Payload = payloadToken?.ToObject<WebSocketWelcomePayload>()
+                    Payload = payloadToken.ToObject<WebSocketWelcomePayload>()
                 },
                 "notification" => new WebSocketNotificationMessage()
                 {
@@ -181,7 +179,7 @@ namespace Twitch_EventSub_library
             };
         }
 
-        private WebSocketNotificationPayload CreateNotificationPayload(JToken payload)
+        private static WebSocketNotificationPayload CreateNotificationPayload(JToken payload)
         {
             var resultMessage = new WebSocketNotificationPayload();
 
@@ -208,7 +206,7 @@ namespace Twitch_EventSub_library
 
                 case "channel.subscription.gift":
                     resultMessage.Event = payload["event"]?.ToObject<SubscriptionGiftEvent>();
-                    break; //WebSocketNotificationEvent
+                    break;
 
                 case "channel.subscription.message":
                     resultMessage.Event = payload["event"]?.ToObject<SubscriptionMessageEvent>();
@@ -258,126 +256,117 @@ namespace Twitch_EventSub_library
                     resultMessage.Event = payload["event"]?.ToObject<GuestStarSettingsUpdateEvent>();
                     break;
 
-                /*  case "channel.channel_points_custom_reward.add":
-                      resultMessage.Event = payload["event"]?.ToObject<channe>();
-                      break;
+                case "channel.channel_points_custom_reward.add":
+                    resultMessage.Event = payload["event"]?.ToObject<PointsCustomRewardAddEvent>();
+                    break;
 
-                  case "channel.channel_points_custom_reward.update":
-                      if (message.Payload.Event is ChannelPointsCustomRewardUpdateEvent pointsCustomRewardUpdateEvent)
-                      {
-                          // Handle ChannelPointsCustomRewardUpdateEvent here...
-                      }
-                      break;
+                case "channel.channel_points_custom_reward.update":
+                    resultMessage.Event = payload["event"]?.ToObject<PointsCustomRewardUpdateEvent>();
+                    break;
 
-                  case "channel.channel_points_custom_reward.remove":
-                      if (message.Payload.Event is ChannelPointsCustomRewardRemoveEvent pointsCustomRewardRemoveEvent)
-                      {
-                          // Handle ChannelPointsCustomRewardRemoveEvent here...
-                      }
-                      break;
+                case "channel.channel_points_custom_reward.remove":
+                    resultMessage.Event = payload["event"]?.ToObject<PointsCustomRewardRemoveEvent>();
+                    break;
 
-                  case "channel.channel_points_custom_reward_redemption.add":
-                      if (message.Payload.Event is ChannelPointsCustomRewardRedemptionAddEvent pointsCustomRewardRedemptionAddEvent)
-                      {
-                          // Handle ChannelPointsCustomRewardRedemptionAddEvent here...
-                      }
-                      break;
+                case "channel.channel_points_custom_reward_redemption.add":
+                    resultMessage.Event = payload["event"]?.ToObject<PointsCustomRewardRedemptionAddEvent>();
+                    break;
 
-                  case "channel.channel_points_custom_reward_redemption.update":
-                      if (message.Payload.Event is ChannelPointsCustomRewardRedemptionUpdateEvent pointsCustomRewardRedemptionUpdateEvent)
-                      {
-                          // Handle ChannelPointsCustomRewardRedemptionUpdateEvent here...
-                      }
-                      break;
+                case "channel.channel_points_custom_reward_redemption.update":
+                    resultMessage.Event = payload["event"]?.ToObject<PointsCustomRewardRedemptionUpdateEvent>();
+                    break;
 
-                  case "channel.poll.begin":
-                      if (message.Payload.Event is ChannelPollBeginEvent pollBeginEvent)
-                      {
-                          // Handle ChannelPollBeginEvent here...
-                      }
-                      break;
+                case "channel.poll.begin":
+                    resultMessage.Event = payload["event"]?.ToObject<PollBeginEvent>();
+                    break;
 
-                  case "channel.poll.progress":
-                      if (message.Payload.Event is ChannelPollProgressEvent pollProgressEvent)
-                      {
-                          // Handle ChannelPollProgressEvent here...
-                      }
-                      break;
+                case "channel.poll.progress":
+                    resultMessage.Event = payload["event"]?.ToObject<PollProgressEvent>();
+                    break;
 
-                  case "channel.poll.end":
-                      if (message.Payload.Event is ChannelPollEndEvent pollEndEvent)
-                      {
-                          // Handle ChannelPollEndEvent here...
-                      }
-                      break;
+                case "channel.poll.end":
+                    resultMessage.Event = payload["event"]?.ToObject<PollEndEvent>();
+                    break;
 
-                  case "channel.prediction.begin":
-                      if (message.Payload.Event is ChannelPredictionBeginEvent predictionBeginEvent)
-                      {
-                          // Handle ChannelPredictionBeginEvent here...
-                      }
-                      break;
+                case "channel.prediction.begin":
+                    resultMessage.Event = payload["event"]?.ToObject<PredictionBeginEvent>();
+                    break;
 
-                  case "channel.prediction.progress":
-                      if (message.Payload.Event is ChannelPredictionProgressEvent predictionProgressEvent)
-                      {
-                          // Handle ChannelPredictionProgressEvent here...
-                      }
-                      break;
+                case "channel.prediction.progress":
+                    resultMessage.Event = payload["event"]?.ToObject<PredictionProgressEvent>();
+                    break;
 
-                  case "channel.prediction.lock":
-                      if (message.Payload.Event is ChannelPredictionLockEvent predictionLockEvent)
-                      {
-                          // Handle ChannelPredictionLockEvent here...
-                      }
-                      break;
+                case "channel.prediction.lock":
+                    resultMessage.Event = payload["event"]?.ToObject<PredictionLockEvent>();
+                    break;
 
-                  case "channel.prediction.end":
-                      if (message.Payload.Event is ChannelPredictionEndEvent predictionEndEvent)
-                      {
-                          // Handle ChannelPredictionEndEvent here...
-                      }
-                      break;
+                case "channel.prediction.end":
+                    resultMessage.Event = payload["event"]?.ToObject<PredictionEndEvent>();
+                    break;
 
-                  case "channel.charity_campaign.donate":
-                      if (message.Payload.Event is ChannelCharityCampaignDonateEvent charityCampaignDonateEvent)
-                      {
-                          // Handle ChannelCharityCampaignDonateEvent here...
-                      }
-                      break;
+                case "channel.charity_campaign.donate":
+                    resultMessage.Event = payload["event"]?.ToObject<CharityDonationEvent>();
+                    break;
 
-                  case "channel.charity_campaign.start":
-                      if (message.Payload.Event is ChannelCharityCampaignStartEvent charityCampaignStartEvent)
-                      {
-                          // Handle ChannelCharityCampaignStartEvent here...
-                      }
-                      break;
+                case "channel.charity_campaign.start":
+                    resultMessage.Event = payload["event"]?.ToObject<CharityCampaignStartEvent>();
+                    break;
 
-                  case "channel.charity_campaign.progress":
-                      if (message.Payload.Event is ChannelCharityCampaignProgressEvent charityCampaignProgressEvent)
-                      {
-                          // Handle ChannelCharityCampaignProgressEvent here...
-                      }
-                      break;
+                case "channel.charity_campaign.progress":
+                    resultMessage.Event = payload["event"]?.ToObject<CharityCampaignProgressEvent>();
+                    break;
 
-                  case "channel.charity_campaign.stop":
-                      if (message.Payload.Event is ChannelCharityCampaignStopEvent charityCampaignStopEvent)
-                      {
-                          // Handle ChannelCharityCampaignStopEvent here...
-                      }
-                      break;
+                case "channel.charity_campaign.stop":
+                    resultMessage.Event = payload["event"]?.ToObject<CharityCampaignStopEvent>();
+                    break;
 
-                  case "drop.entitlement.grant":
-                      if (message.Payload.Event is DropEntitlementGrantEvent entitlementGrantEvent)
-                      {
-                          // Handle DropEntitlementGrantEvent here...
-                      }
-                      break;
+                case "channel.hype_train.begin":
+                    resultMessage.Event = payload["event"]?.ToObject<HypeTrainBeginEvent>();
+                    break;
 
-                  case "extension.bits_transaction.create":
-                      if (message.Payload.Event is ExtensionBitsTransactionCreateEvent bitsTransactionCreateEvent)
-                      {
-                      }*/
+                case "channel.hype_train.progress":
+                    resultMessage.Event = payload["event"]?.ToObject<HypeTrainProgressEvent>();
+                    break;
+
+                case "channel.hype_train.end":
+                    resultMessage.Event = payload["event"]?.ToObject<HypeTrainEndEvent>();
+                    break;
+
+                case "channel.shield_mode.begin":
+                    resultMessage.Event = payload["event"]?.ToObject<ShieldModeBeginEvent>();
+                    break;
+
+                case "channel.shield_mode.end":
+                    resultMessage.Event = payload["event"]?.ToObject<ShieldModeEndEvent>();
+                    break;
+
+                case "channel.shoutout.create":
+                    resultMessage.Event = payload["event"]?.ToObject<ShoutoutCreateEvent>();
+                    break;
+
+                case "channel.shoutout.receive":
+                    resultMessage.Event = payload["event"]?.ToObject<ShoutoutReceivedEvent>();
+                    break;
+
+                case "channel.goal.begin":
+                    resultMessage.Event = payload["event"]?.ToObject<GoalBeginEvent>();
+                    break;
+
+                case "channel.goal.progress":
+                    resultMessage.Event = payload["event"]?.ToObject<GoalProgressEvent>();
+                    break;
+
+                case "channel.goal.end":
+                    resultMessage.Event = payload["event"]?.ToObject<GoalEndEvent>();
+                    break;
+                case "stream.online":
+                    resultMessage.Event = payload["event"]?.ToObject<StreamOnlineEvent>();
+                    break;
+
+                case "stream.offline":
+                    resultMessage.Event = payload["event"]?.ToObject<StreamOfflineEvent>();
+                    break;
+
                 default:
                     break;
             }
@@ -386,13 +375,10 @@ namespace Twitch_EventSub_library
 
         private async Task WelcomeMessageProcessing(WebSocketWelcomeMessage message)
         {
-            _sessionId = message.Payload.Session.Id;
-            if (OnRegisterSubscriptions != null)
-            {
-                await OnRegisterSubscriptions.Invoke(this, _sessionId);
-            }
+            SessionId = message?.Payload?.Session.Id;
+            await OnRegisterSubscriptions.TryInvoke(this, SessionId);
             // keep alive in sec + 10% tolerance
-            if (message.Payload.Session.KeepAliveTimeoutSeconds != null)
+            if (message?.Payload?.Session.KeepAliveTimeoutSeconds != null)
             {
                 _keepAlive = (message.Payload.Session.KeepAliveTimeoutSeconds.Value * 1000 + 100);
             }
@@ -401,21 +387,18 @@ namespace Twitch_EventSub_library
 
         private async Task NotificationMessageProcessing(WebSocketNotificationMessage message)
         {
-            if (OnNotificationMessage != null)
-            {
-                await OnNotificationMessage.Invoke(this, message.Payload);
-            }
+            if (message.Payload != null)
+                await OnNotificationMessage.TryInvoke(this, message.Payload);
         }
 
         private async Task ReconnectMessageProcessing(WebSocketReconnectMessage message)
         {
-#if !DEBUG
-            
+
 
             _awaitForReconnect = true;
             _watchdog.Stop();
             await _socket.DisconnectAsync();
-            if (message.Payload.Session.ReconnectUrl != null)
+            if (message?.Payload?.Session.ReconnectUrl != null)
             {
                 _connectionActive = await _socket.ConnectAsync(message.Payload.Session.ReconnectUrl);
                 if (!_connectionActive)
@@ -425,27 +408,22 @@ namespace Twitch_EventSub_library
                 }
             }
             _watchdog.Start(_keepAlive);
-            _sessionId = message.Payload.Session.Id;
-            if (OnRegisterSubscriptions != null)
-            {
-                await OnRegisterSubscriptions.Invoke(this, _sessionId);
-            }
+            SessionId = message?.Payload?.Session.Id;
+
+            await OnRegisterSubscriptions.TryInvoke(this, SessionId);
+
             _awaitForReconnect = false;
-#else
-            _sessionId = message.Payload.Session.Id;
-            await OnRegisterSubscriptions.Invoke(this, _sessionId);
-#endif
         }
 
         private async Task RevocationMessageProcessing(WebSocketRevocationMessage message)
         {
             if (OnRevocationMessage != null)
             {
-                await OnRevocationMessage.Invoke(this, message);
+                await OnRevocationMessage.TryInvoke(this, message);
             }
         }
 
-        private Task PingMessageProcessing(WebSocketPingMessage message)
+        private Task PingMessageProcessing()
         {
             if (_awaitForReconnect == false)
             {
@@ -455,7 +433,7 @@ namespace Twitch_EventSub_library
             return Task.CompletedTask;
         }
 
-        private Task KeepAliveMessageProcessing(WebSocketKeepAliveMessage message)
+        private Task KeepAliveMessageProcessing()
         {
             _watchdog.Reset();
             return Task.CompletedTask;
@@ -467,7 +445,7 @@ namespace Twitch_EventSub_library
             _logger.LogInformation("Server didn't respond in time");
             if (OnOutsideDisconnect != null)
             {
-                await OnOutsideDisconnect.Invoke(this, e);
+                await OnOutsideDisconnect.TryInvoke(this, e);
             }
             _connectionActive = false;
         }

@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace Twitch_EventSub_library.Messages.SharedContents
+namespace Twitch.EventSub.Messages.SharedContents
 {
     public class WebSocketTransport
     {
@@ -11,6 +11,9 @@ namespace Twitch_EventSub_library.Messages.SharedContents
         public string SessionId { get; set; }
 
         [JsonProperty("connected_at")]
-        public string connectedAt { get; set; }
+        public DateTime connectedAt { get; set; }
+
+        [JsonProperty("disconnected_at")]
+        public DateTime DisconnectedAt { get; set; }
     }
 }

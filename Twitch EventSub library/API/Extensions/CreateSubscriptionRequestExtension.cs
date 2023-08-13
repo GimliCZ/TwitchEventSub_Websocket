@@ -1,6 +1,6 @@
-﻿using Twitch_EventSub_library.API.Models;
+﻿using Twitch.EventSub.API.Models;
 
-namespace Twitch_EventSub_library.API.Extensions
+namespace Twitch.EventSub.API.Extensions
 {
     public static class CreateSubscriptionRequestExtension
     {

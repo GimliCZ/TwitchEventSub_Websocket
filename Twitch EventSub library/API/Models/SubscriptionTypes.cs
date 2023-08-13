@@ -1,4 +1,4 @@
-﻿namespace Twitch_EventSub_library.API.Models
+﻿namespace Twitch.EventSub.API.Models
 {
     public enum SubscriptionType
     {
@@ -89,4 +89,3 @@
         UserUpdate
     }
 }
-

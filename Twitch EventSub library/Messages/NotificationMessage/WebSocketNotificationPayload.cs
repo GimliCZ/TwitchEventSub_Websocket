@@ -1,14 +1,14 @@
 ﻿using Newtonsoft.Json;
-using Twitch_EventSub_library.Messages.SharedContents;
+using Twitch.EventSub.Messages.SharedContents;
 
-namespace Twitch_EventSub_library.Messages.NotificationMessage
+namespace Twitch.EventSub.Messages.NotificationMessage
 {
     public class WebSocketNotificationPayload
     {
         [JsonProperty("subscription")]
-        public WebSocketSubscription Subscription { get; set; }
+        public WebSocketSubscription? Subscription { get; set; }
 
         [JsonProperty("event")]
-        public WebSocketNotificationEvent Event { get; set; }
+        public WebSocketNotificationEvent? Event { get; set; }
     }
 }

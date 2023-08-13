@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace Twitch_EventSub_library.Messages.NotificationMessage
+namespace Twitch.EventSub.Messages.NotificationMessage
 {
     public class WebSocketNotificationCondition
     {

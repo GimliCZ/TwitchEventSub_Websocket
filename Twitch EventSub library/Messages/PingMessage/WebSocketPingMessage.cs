@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace Twitch_EventSub_library.Messages.PingMessage
+namespace Twitch.EventSub.Messages.PingMessage
 {
     public class WebSocketPingMessage : WebSocketMessage
     {

@@ -1,4 +1,4 @@
-﻿namespace Twitch_EventSub_library.API.Models
+﻿namespace Twitch.EventSub.API.Models
 {
     public class StatusProvider
     {
@@ -17,7 +17,8 @@
             WebsocketInternalError,
             WebsocketNetworkTimeout,
             WebsocketNetworkError,
-            Empty //My addition
+            //My addition - describes all possible states
+            Empty
         }
         public static string GetStatusString(SubscriptionStatus status)
         {

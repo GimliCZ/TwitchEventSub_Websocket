@@ -1,4 +1,4 @@
-﻿namespace Twitch_EventSub_library.CoreFunctions
+﻿namespace Twitch.EventSub.CoreFunctions
 {
     /// <summary>
     /// This class is derived from Twitch documentation.
@@ -30,18 +30,15 @@
 
         public bool IsUpToDate(string data)
         {
-            var now = DateTimeOffset.UtcNow;
+            var now = DateTime.UtcNow;
             var messageTime = ConvertToRfc3339WithNanoseconds(data);
             return (now - messageTime) < TimeSpan.FromMinutes(10);
 
         }
 
-        public static DateTimeOffset ConvertToRfc3339WithNanoseconds(string timestamp)
+        public static DateTime ConvertToRfc3339WithNanoseconds(string timestamp)
         {
-            DateTime dateTime = DateTime.Parse(timestamp, null, System.Globalization.DateTimeStyles.RoundtripKind);
-
-            // Get the timestamp in UTC to correctly represent the offset.
-            return new DateTimeOffset(dateTime.ToUniversalTime());
+            return DateTime.Parse(timestamp, null, System.Globalization.DateTimeStyles.RoundtripKind).ToUniversalTime();
         }
     }
 }

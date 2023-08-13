@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
-using Twitch_EventSub_library.Messages.NotificationMessage;
+using Twitch.EventSub.API.Models;
 
-namespace Twitch_EventSub_library.Messages.SharedContents
+namespace Twitch.EventSub.Messages.SharedContents
 {
     public class WebSocketSubscription
     {
@@ -21,7 +21,7 @@ namespace Twitch_EventSub_library.Messages.SharedContents
         public string Cost { get; set; }
 
         [JsonProperty("condition")]
-        public WebSocketNotificationCondition Condition { get; set; }
+        public Condition Condition { get; set; }
 
         [JsonProperty("transport")]
         public WebSocketTransport Transport { get; set; }

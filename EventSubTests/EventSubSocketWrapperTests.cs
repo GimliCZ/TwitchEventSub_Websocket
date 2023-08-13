@@ -1,9 +1,9 @@
 using Microsoft.Extensions.Logging;
 using Moq;
-using Twitch_EventSub_library;
-using Twitch_EventSub_library.CoreFunctions;
-using Twitch_EventSub_library.Messages.NotificationMessage;
-using Twitch_EventSub_library.Messages.RevocationMessage;
+using Twitch.EventSub;
+using Twitch.EventSub.CoreFunctions;
+using Twitch.EventSub.Messages.NotificationMessage;
+using Twitch.EventSub.Messages.RevocationMessage;
 
 namespace EventSubTests
 {
@@ -22,7 +22,7 @@ namespace EventSubTests
         {
 
             // Arrange
-            var logger = CreateMockLogger<EventSubSocketWrapper>();
+            var logger = CreateMockLogger<EventSubSocketWrapperTests>();
             var socketLogger = CreateMockLogger<GenericWebsocket>();
             var watchdogLogger = CreateMockLogger<Watchdog>();
 
@@ -49,7 +49,7 @@ namespace EventSubTests
             // Act
             await eventSubSocketWrapper.ParseWebSocketMessageAsync(welcomeMessageJson);
             // Assert
-            Assert.Equal("AQoQILE98gtqShGmLD7AM6yJThAB", eventSubSocketWrapper._sessionId);
+            Assert.Equal("AQoQILE98gtqShGmLD7AM6yJThAB", eventSubSocketWrapper.SessionId);
         }
 
         [Fact]

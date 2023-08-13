@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace Twitch_EventSub_library.Messages.NotificationMessage.Events
+namespace Twitch.EventSub.Messages.NotificationMessage.Events
 {
     public class GuestStarSessionEndEvent : GuestStarSessionBeginEvent
     {

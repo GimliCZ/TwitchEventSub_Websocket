@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace Twitch_EventSub_library.Messages.SharedContents
+namespace Twitch.EventSub.Messages.SharedContents
 {
     public class WebSocketMessageMetadata
     {

@@ -3,9 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.33627.172
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Twitch EventSub Library", "Twitch EventSub library\Twitch EventSub Library.csproj", "{24435912-740E-428F-9A2C-BAEFBD8E8743}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventSubTests", "EventSubTests\EventSubTests.csproj", "{9D0D57CC-A504-4616-8C39-5F190EA501F6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Medbot.Twitch.EventSub", "Twitch EventSub library\Medbot.Twitch.EventSub.csproj", "{42E5A136-4AE2-42BB-9975-41AEF1BD2C7B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -13,14 +11,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{24435912-740E-428F-9A2C-BAEFBD8E8743}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{24435912-740E-428F-9A2C-BAEFBD8E8743}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{24435912-740E-428F-9A2C-BAEFBD8E8743}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{24435912-740E-428F-9A2C-BAEFBD8E8743}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9D0D57CC-A504-4616-8C39-5F190EA501F6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9D0D57CC-A504-4616-8C39-5F190EA501F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9D0D57CC-A504-4616-8C39-5F190EA501F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9D0D57CC-A504-4616-8C39-5F190EA501F6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{42E5A136-4AE2-42BB-9975-41AEF1BD2C7B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{42E5A136-4AE2-42BB-9975-41AEF1BD2C7B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{42E5A136-4AE2-42BB-9975-41AEF1BD2C7B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{42E5A136-4AE2-42BB-9975-41AEF1BD2C7B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

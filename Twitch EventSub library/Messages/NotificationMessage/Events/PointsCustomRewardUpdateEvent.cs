@@ -1,6 +1,6 @@
-﻿namespace Twitch_EventSub_library.Messages.NotificationMessage.Events
+﻿namespace Twitch.EventSub.Messages.NotificationMessage.Events
 {
-    internal class PointsCustomRewardUpdateEvent : PointsCustomRewardAddEvent
+    public class PointsCustomRewardUpdateEvent : PointsCustomRewardAddEvent
     {
     }
 }

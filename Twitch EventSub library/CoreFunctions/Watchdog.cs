@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
+using Twitch.EventSub.Library.CoreFunctions;
 
-namespace Twitch_EventSub_library.CoreFunctions
+namespace Twitch.EventSub.CoreFunctions
 {
     public class Watchdog
     {
@@ -26,7 +27,7 @@ namespace Twitch_EventSub_library.CoreFunctions
             if (!_isRunning)
             {
                 _isRunning = true;
-                _timer = new Timer(OnTimerElapsed, null, _timeout, Timeout.Infinite);
+                _timer = new Timer(OnTimerElapsed, null, _timeout, _timeout);
                 _logger.LogDebug("Watchdog started.");
             }
             else
@@ -68,10 +69,10 @@ namespace Twitch_EventSub_library.CoreFunctions
         {
             _timer.Change(Timeout.Infinite, Timeout.Infinite);
             _isRunning = false;
-            _logger.LogDebug("Watchdog timeout! Something went wrong.");
+            _logger.LogInformation("Watchdog timeout! Something went wrong.");
 
             // Raise the WatchdogTimeout event
-            await WatchdogTimeout?.Invoke(this, "Server didn't respond in time")!;
+            await WatchdogTimeout.TryInvoke(this, "Server didn't respond in time")!;
         }
     }
 }

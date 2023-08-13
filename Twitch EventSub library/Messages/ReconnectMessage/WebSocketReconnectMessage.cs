@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace Twitch_EventSub_library.Messages.ReconnectMessage
+namespace Twitch.EventSub.Messages.ReconnectMessage
 {
     public class WebSocketReconnectMessage : WebSocketMessage
     {

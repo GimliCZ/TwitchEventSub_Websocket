@@ -24,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Twitch EventSub library\Twitch EventSub Library.csproj" />
+    <ProjectReference Include="..\Twitch EventSub library\Medbot.Twitch.EventSub.csproj" />
   </ItemGroup>
 
 </Project>

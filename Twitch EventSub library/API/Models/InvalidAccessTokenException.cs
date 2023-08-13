@@ -1,4 +1,4 @@
-﻿namespace Twitch_EventSub_library.API.Models
+﻿namespace Twitch.EventSub.API.Models
 {
     public class InvalidAccessTokenException : Exception
     {

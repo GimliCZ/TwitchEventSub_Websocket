@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace Twitch_EventSub_library.API.Models
+namespace Twitch.EventSub.API.Models
 {
     public class CreateSubscriptionRequest
     {

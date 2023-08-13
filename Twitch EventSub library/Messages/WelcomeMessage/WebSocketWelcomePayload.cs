@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
-using Twitch_EventSub_library.Messages.SharedContents;
+using Twitch.EventSub.Messages.SharedContents;
 
-namespace Twitch_EventSub_library.Messages.WelcomeMessage
+namespace Twitch.EventSub.Messages.WelcomeMessage
 {
     public class WebSocketWelcomePayload
     {

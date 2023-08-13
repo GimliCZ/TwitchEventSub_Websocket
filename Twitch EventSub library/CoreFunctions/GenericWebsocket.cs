@@ -2,23 +2,23 @@
 using System.Net.WebSockets;
 using System.Text;
 using Microsoft.Extensions.Logging;
+using Twitch.EventSub.Library.CoreFunctions;
 
-namespace Twitch_EventSub_library.CoreFunctions
+namespace Twitch.EventSub.CoreFunctions
 {
     public class GenericWebsocket
     {
         private ClientWebSocket? _clientWebSocket;
-        private readonly Timer _sendTimer;
+        private Timer _sendTimer;
         private bool _sendIsProcessing;
         private bool _disconnectInProgress;
         private readonly TimeSpan _speedOfListening;
         private readonly ConcurrentQueue<string> _messagesToSend = new();
-        private readonly ILogger<GenericWebsocket> _logger;
+        private readonly ILogger _logger;
         private static CancellationTokenSource? _receiveCancelSource;
         private static CancellationTokenSource? _sendCancelSource;
         private ArraySegment<byte> _readBuffer;
         public Task? ReceiveTask { get; private set; }
-
         private MemoryStream? _readMemoryStream;
 
         private const int MaximumWaitTimeBeforeForcingDisconnection = 2000; // In ms
@@ -27,18 +27,12 @@ namespace Twitch_EventSub_library.CoreFunctions
         public event AsyncEventHandler<string>? OnServerSideTerminationReasoning;
 
         public GenericWebsocket(
-            ILogger<GenericWebsocket> logger,
+            ILogger logger,
             TimeSpan listenSpeed)
         {
             _sendIsProcessing = false;
             _logger = logger;
             _speedOfListening = listenSpeed;
-
-            _sendTimer = new Timer(
-                x => SendRoutineTick((CancellationToken)(x ?? throw new ArgumentNullException(nameof(x)))),
-                _sendCancelSource?.Token,
-                Timeout.InfiniteTimeSpan,
-                TimeSpan.Zero);
         }
 
         private async Task InvokeMessageReceivedAsync(string e)
@@ -64,6 +58,14 @@ namespace Twitch_EventSub_library.CoreFunctions
         {
             _receiveCancelSource = new CancellationTokenSource();
             _sendCancelSource = new CancellationTokenSource();
+
+
+            _sendTimer = new Timer(
+                x => SendRoutineTick((CancellationToken)x),
+                _sendCancelSource?.Token,
+                Timeout.InfiniteTimeSpan,
+                TimeSpan.Zero);
+
             _readBuffer = new byte[4096];
             _readMemoryStream = new();
 
@@ -154,7 +156,7 @@ namespace Twitch_EventSub_library.CoreFunctions
 
                 if (receiveResult.CloseStatusDescription != null && OnServerSideTerminationReasoning != null)
                 {
-                    await OnServerSideTerminationReasoning.Invoke(this, receiveResult.CloseStatusDescription);
+                    await OnServerSideTerminationReasoning.TryInvoke(this, receiveResult.CloseStatusDescription);
                 }
                 _sendCancelSource?.Cancel();
                 await _clientWebSocket.CloseOutputAsync(
@@ -256,12 +258,13 @@ namespace Twitch_EventSub_library.CoreFunctions
             var timeout = new CancellationTokenSource(MaximumWaitTimeBeforeForcingDisconnection);
             try
             {
-                await _clientWebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "Closing", timeout.Token);
+                await _clientWebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", timeout.Token);
 
-                while (_clientWebSocket.State != WebSocketState.Closed && !timeout.Token.IsCancellationRequested)
+                 
+                if (_clientWebSocket.State != WebSocketState.Closed)
                 {
-                    // Awaiting server response, wait 200ms before checking again
-                    await Task.Delay(200, CancellationToken.None);
+                    _logger.LogWarning("Requested websocket disconnection was not successful. Actual status: {State}",
+                        _clientWebSocket.State);
                 }
             }
             catch (OperationCanceledException)

@@ -1,28 +1,32 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Net.WebSockets;
+using Microsoft.Extensions.Logging;
 using Microsoft.VisualBasic.CompilerServices;
-using Twitch_EventSub_library.API;
-using Twitch_EventSub_library.API.Models;
-using Twitch_EventSub_library.CoreFunctions;
+using Twitch.EventSub.API;
+using Twitch.EventSub.API.Models;
+using Twitch.EventSub.CoreFunctions;
+using Twitch.EventSub.Library.CoreFunctions;
 
-namespace Twitch_EventSub_library
+namespace Twitch.EventSub
 {
     public class EventSubscriptionManager
     {
         private readonly TwitchParcialApi _api;
         private string? _sessionId;
-        private readonly ILogger<EventSubscriptionManager> _logger;
+        private readonly ILogger _logger;
         private string? _clientId;
         private string? _accessToken;
         private bool _checkRunning;
         private bool _setup;
         private PeriodicTimer? _timer;
+        private Task _backgroundTask;
         private bool _isRunning;
+        private CancellationTokenSource _cancelSource;
 
         private List<CreateSubscriptionRequest>? _requestedSubscriptions;
 
         public event AsyncEventHandler<InvalidAccessTokenException> OnRefreshTokenRequest;
 
-        public EventSubscriptionManager(ILogger<EventSubscriptionManager> logger, ILogger<TwitchParcialApi> ApiLogger)
+        public EventSubscriptionManager(ILogger logger, ILogger ApiLogger)
         {
             _api = new TwitchParcialApi(ApiLogger);
             _logger = logger;
@@ -38,6 +42,7 @@ namespace Twitch_EventSub_library
         /// <returns></returns>
         public async Task Setup(string? clientId, string? accessToken, string? sessionId, List<CreateSubscriptionRequest>? requestedSubscriptions)
         {
+            
             _clientId = clientId ?? throw new ArgumentNullException(nameof(clientId));
             _accessToken = accessToken ?? throw new ArgumentNullException(nameof(accessToken));
             _sessionId = sessionId ?? throw new ArgumentNullException(nameof(sessionId));
@@ -55,6 +60,7 @@ namespace Twitch_EventSub_library
             }
             _requestedSubscriptions = requestedSubscriptions;
             _setup = true;
+            _logger.LogInformation("Event Sub ready: Client Id: " + clientId + " accessToken " + accessToken + " session id" + sessionId);
         }
         /// <summary>
         /// This Function servers for handeling AccessToken changes ONLY
@@ -71,19 +77,27 @@ namespace Twitch_EventSub_library
             {
                 throw new InvalidOperationException();
             }
+            if (_sessionId == null)
+            {
+                throw new NullReferenceException();
+
+            }
 
             _clientId = clientId;
             _accessToken = accessToken;
-            foreach (var typeListOfSub in requestedSubscriptions)
+            if (requestedSubscriptions != null)
             {
-                typeListOfSub.Transport.SessionId = _sessionId;
+                foreach (var typeListOfSub in requestedSubscriptions)
+                {
+                    typeListOfSub.Transport.SessionId = _sessionId;
+                }
+                while (_checkRunning)
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(300));
+                }
+                _requestedSubscriptions = requestedSubscriptions;
             }
-            while (_checkRunning)
-            {
-                await Task.Delay(TimeSpan.FromMilliseconds(300));
-            }
-            _requestedSubscriptions = requestedSubscriptions;
-            await RunCheck();
+            await RunCheck(_cancelSource);
         }
         /// <summary>
         /// Creates repeated cycle for checking subscriptons. Even tho we should know about every change in
@@ -92,56 +106,99 @@ namespace Twitch_EventSub_library
         /// <returns></returns>
         /// <exception cref="IncompleteInitialization">Setup was not run</exception>
         /// <exception cref="Exception">May crash, if dupes found in list</exception>
-        public async Task Start()
+        /// <exception cref="ArgumentNullException">May crash for check sub has no valid values to run on</exception>
+        public void Start()
         {
             if (!_setup)
             {
                 throw new IncompleteInitialization();
             }
-            _isRunning = true;
+
             if (_isRunning)
             {
                 return;
             }
+            _cancelSource = new CancellationTokenSource();
+            _isRunning = true;
             //Subscriptions decay every hour, having 30 min is just to be on safe side
+
+            _backgroundTask = Task.Run(BackgroundCheck,_cancelSource.Token);
+        }
+
+        public async Task RevocationResolver(Messages.RevocationMessage.WebSocketRevocationMessage e)
+        {
+            if (_requestedSubscriptions == null || _clientId == null || _accessToken == null)
+            {
+                return;
+            }
+            foreach (var sub in _requestedSubscriptions.Where(
+                         sub => sub.Type == e?.Payload?.Type && sub.Version == e?.Payload?.Version))
+            {
+                if (!await ApiTrySubscribeAsync(_clientId, _accessToken, sub, _cancelSource))
+                {
+                    _logger.LogInformation("Failed to subscribe subscription during revocation");
+                }
+                _logger.LogInformation("Refreshed sub due revocation: " + sub.Type + "caused by " + e?.Payload?.Status);
+            }
+
+        }
+
+        private async Task BackgroundCheck()
+        {
             _timer = new PeriodicTimer(TimeSpan.FromMinutes(30));
             try
             {
-                while (await _timer.WaitForNextTickAsync())
+                do
                 {
-                    await RunCheck();
-                }
+                    await RunCheck(_cancelSource);
+                    _logger.LogInformation("Check run.");
+                } while (await _timer.WaitForNextTickAsync(_cancelSource.Token));
             }
             catch (TaskCanceledException)
             {
                 // proceed
             }
         }
+
         /// <summary>
         /// Stops repeated checking
         /// </summary>
         /// <returns></returns>
         public async Task Stop()
         {
-            _isRunning = false;
-            await Clear();
-            _timer?.Dispose();
+            if (!_setup)
+            {
+                _timer?.Dispose();
+                return;
+            }
+            if (_isRunning)
+            {
+                _isRunning = false;
+                await Clear(_cancelSource);
+                _cancelSource.Cancel();
+                _timer?.Dispose();
+            }
         }
         /// <summary>
-        /// Removes all subs
+        /// Removes all subs, it has to be unsubscribed for reasons of cost dependent on session id
         /// </summary>
         /// <returns></returns>
-        private async Task Clear()
+        private async Task Clear(CancellationTokenSource clSource)
         {
-            var allSubscriptions = await ApiTryGetAllSubscriptionsAsync(_clientId, _accessToken, StatusProvider.SubscriptionStatus.Empty);
+            if (_clientId == null || _accessToken == null)
+            {
+                throw new ArgumentNullException();
+            }
+            var allSubscriptions = await ApiTryGetAllSubscriptionsAsync(_clientId, _accessToken, clSource, StatusProvider.SubscriptionStatus.Empty);
             foreach (var getSubscriptionsResponse in allSubscriptions)
             {
                 foreach (var subscription in getSubscriptionsResponse.Data)
                 {
-                    if (await ApiTryUnSubscribeAsync(_clientId, _accessToken, subscription.Id))
+                    if (!await ApiTryUnSubscribeAsync(_clientId, _accessToken, subscription.Id, clSource))
                     {
                         _logger.LogInformation("Failed to unsubscribe during clear" + subscription.Type);
                     }
+                    _logger.LogInformation("Sub cleared: " + subscription.Type);
                 }
             }
         }
@@ -152,7 +209,7 @@ namespace Twitch_EventSub_library
         /// <returns></returns>
         /// <exception cref="IncompleteInitialization">Setup was not run</exception>
         /// <exception cref="Exception">Trigger when requested list has dupes</exception>
-        public async Task RunCheck()
+        public async Task RunCheck(CancellationTokenSource clSource)
         {
             if (_checkRunning)
             {
@@ -179,26 +236,41 @@ namespace Twitch_EventSub_library
             }
 
             //remove old connections, old sessions and all subscriptions with error status
-            var allSubscriptions = await ApiTryGetAllSubscriptionsAsync(_clientId, _accessToken, StatusProvider.SubscriptionStatus.Empty);
+            if (_clientId == null || _accessToken == null)
+            {
+                throw new ArgumentNullException();
+            }
+            var allSubscriptions = await ApiTryGetAllSubscriptionsAsync(_clientId, _accessToken, clSource, StatusProvider.SubscriptionStatus.Empty);
+            //Yes we can get null from subscription function, if something goes horribly wrong.
+            if (allSubscriptions == null)
+            {
+                _logger.LogInformation("Subscription function returned null, skipping check");
+                return;
+            }
             foreach (var getSubscriptionsResponse in allSubscriptions)
             {
                 foreach (var subscription in getSubscriptionsResponse.Data)
                 {
-                    if (subscription.Transport.SessionId != _sessionId ||
-                        DateTimeOffset.Now - ReplayProtection.ConvertToRfc3339WithNanoseconds(subscription.CreatedAt) > TimeSpan.FromHours(1) ||
-                        subscription.Status != "enabled")
+                    if (subscription.Transport.SessionId != _sessionId || subscription.Status != "enabled" ||
+                        DateTime.UtcNow - ReplayProtection.ConvertToRfc3339WithNanoseconds(subscription.CreatedAt) > TimeSpan.FromHours(1))
                     {
-                        if (await ApiTryUnSubscribeAsync(_clientId, _accessToken, subscription.Id))
+                        if (!await ApiTryUnSubscribeAsync(_clientId, _accessToken, subscription.Id, clSource))
                         {
                             _logger.LogInformation("Failed to unsubscribe during check" + subscription.Type);
                         }
-
+                        _logger.LogInformation("Cleared subscription:" + subscription.Type);
                     }
                 }
             }
 
             //Rerun subscription search to get all active current session subs
-            allSubscriptions = await _api.GetAllSubscriptionsAsync(_clientId, _accessToken, StatusProvider.SubscriptionStatus.Empty);
+            allSubscriptions = await ApiTryGetAllSubscriptionsAsync(_clientId, _accessToken, clSource, StatusProvider.SubscriptionStatus.Empty);
+            //Yes we can get null from subscription function, if something goes horribly wrong.
+            if (allSubscriptions == null)
+            {
+                _logger.LogInformation("Subscription function returned null, skipping check");
+                return;
+            }
             foreach (var getSubscriptionsResponse in allSubscriptions)
             {
                 var activeSubscriptions = getSubscriptionsResponse.Data;
@@ -219,10 +291,11 @@ namespace Twitch_EventSub_library
                     // Perform your logic here for extra subscriptions
                     foreach (var extraSubscription in extraSubscriptions)
                     {
-                        if (await ApiTryUnSubscribeAsync(_clientId, _accessToken, extraSubscription.Id))
+                        if (await ApiTryUnSubscribeAsync(_clientId, _accessToken, extraSubscription.Id, clSource))
                         {
                             _logger.LogInformation("Failed to unsubscribe active subscription during check" + extraSubscription.Type);
                         }
+                        _logger.LogInformation("Removed extra sub: " + extraSubscription.Type);
                     }
                 }
 
@@ -231,29 +304,30 @@ namespace Twitch_EventSub_library
                     // Perform your logic here for missing subscriptions
                     foreach (var missingSubscription in missingSubscriptions)
                     {
-                        if (await ApiTrySubscribeAsync(_clientId, _accessToken, missingSubscription))
+                        if (!await ApiTrySubscribeAsync(_clientId, _accessToken, missingSubscription, clSource))
                         {
                             _logger.LogInformation("Failed to subscribe subscription during check");
                         }
+                        _logger.LogInformation("Added extra sub: " + missingSubscription.Type);
                     }
                 }
             }
             _checkRunning = false;
         }
 
-        public async Task<bool> ApiTrySubscribeAsync(string clientId, string accessToken, CreateSubscriptionRequest create)
+        public async Task<bool> ApiTrySubscribeAsync(string clientId, string accessToken, CreateSubscriptionRequest create, CancellationTokenSource clSource)
         {
-            async Task<bool> TrySubscribe() => await _api.SubscribeAsync(clientId, accessToken, create);
+            async Task<bool> TrySubscribe() => await _api.SubscribeAsync(clientId, accessToken, create, clSource);
             return await TryFuncAsync(TrySubscribe);
         }
-        public async Task<bool> ApiTryUnSubscribeAsync(string clientId, string accessToken, string subId)
+        public async Task<bool> ApiTryUnSubscribeAsync(string clientId, string accessToken, string subId, CancellationTokenSource clSource)
         {
-            async Task<bool> TryUnSubscribe() => await _api.UnSubscribeAsync(clientId, accessToken, subId);
+            async Task<bool> TryUnSubscribe() => await _api.UnSubscribeAsync(clientId, accessToken, subId, clSource);
             return await TryFuncAsync(TryUnSubscribe);
         }
-        public async Task<List<GetSubscriptionsResponse>> ApiTryGetAllSubscriptionsAsync(string clientId, string accessToken, StatusProvider.SubscriptionStatus statusSelector)
+        public async Task<List<GetSubscriptionsResponse>> ApiTryGetAllSubscriptionsAsync(string clientId, string accessToken,CancellationTokenSource clSource, StatusProvider.SubscriptionStatus statusSelector)
         {
-            async Task<List<GetSubscriptionsResponse>> TryGetAllSubscriptionsAsync() => await _api.GetAllSubscriptionsAsync(clientId, accessToken, statusSelector);
+            async Task<List<GetSubscriptionsResponse>> TryGetAllSubscriptionsAsync() => await _api.GetAllSubscriptionsAsync(clientId, accessToken,clSource ,statusSelector);
             return await TryFuncAsync(TryGetAllSubscriptionsAsync);
         }
 
@@ -269,20 +343,24 @@ namespace Twitch_EventSub_library
         {
             try
             {
-                return await TryFuncAsync(apiCallAction);
+                return await apiCallAction();
             }
             catch (InvalidAccessTokenException ex)
             {
                 //procedure must run UpdateOnFly function for proper change
-                await OnRefreshTokenRequest.Invoke(this, ex);
+                await OnRefreshTokenRequest.TryInvoke(this, ex);
                 return await apiCallAction();
 
+            }
+            catch (TaskCanceledException)
+            {
+                //its alright, move on
             }
             catch (Exception ex)
             {
                 _logger.LogError("Api call failed due to: {ex}", ex);
             }
-
+            //This is expected behavior. If we get null or false, we handle it in higher part of fuction
             return default;
         }
     }
