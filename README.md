@@ -26,7 +26,7 @@ eventSubClient.Start(clientId,userId, accessToken, listOfSubs);
 * TwitchEventSub Library contains set of enums SubscriptionType which are setting contens of list of subscriptions
 #### Stop Function
 ```csharp
-await _eventSubClient.Stop();
+await eventSubClient.Stop();
 ```
 #### Authorization
 * **EventSub does not provide refresh token capabilities. You have to provide your own.**
