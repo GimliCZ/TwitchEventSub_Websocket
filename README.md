@@ -3,8 +3,9 @@
   <img src="https://img.shields.io/badge/Platform-.NET-lightgrey.svg" style="max-height: 300px;" alt="Platform: iOS">
   <a href="https://www.microsoft.com/net"><img src="https://img.shields.io/badge/.NET%20Framework-6.0.0-orange.svg" style="max-height: 300px;"></a>
 </p>
+
 ## About
-* Handles comunication with twitch eventsub via websocket
+Handles comunication with twitch eventsub via websocket
 
 ## Implementation
 
