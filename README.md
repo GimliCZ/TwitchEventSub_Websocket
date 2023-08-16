@@ -29,6 +29,7 @@ eventSubClient.Start(clientId,userId, accessToken, listOfSubs);
 await _eventSubClient.Stop();
 ```
 #### Authorization
+* **EventSub does not provide refresh token capabilities. You have to provide your own.**
 * To function properly, you are required to subscribe to EventSubClientOnRefreshToken event in order to refresh token
 ```csharp
 eventSubClient.OnRefreshToken -= EventSubClientOnRefreshToken;
@@ -37,13 +38,13 @@ eventSubClient.OnRefreshToken += EventSubClientOnRefreshToken;
 * Then run your token refreshing function
 ```csharp
 await RefreshAccessTokenAsync();
-await _eventSubClient.UpdateOnFly(clientId, userId, accessToken, listOfSubs);
+await eventSubClient.UpdateOnFly(clientId, userId, accessToken, listOfSubs);
 ```
 #### Reconnection
 * You may also listen to Unexpected Connetion Termination
 ```csharp
-_eventSubClient.OnUnexpectedConnectionTermination -= EventSubClientOnUnexpectedConnectionTermination;
-_eventSubClient.OnUnexpectedConnectionTermination += EventSubClientOnUnexpectedConnectionTermination;
+eventSubClient.OnUnexpectedConnectionTermination -= EventSubClientOnUnexpectedConnectionTermination;
+eventSubClient.OnUnexpectedConnectionTermination += EventSubClientOnUnexpectedConnectionTermination;
 ```
 This can trigger your own procedure which could restart entire client or log what happened.
 
