@@ -1,5 +1,4 @@
-﻿using System.Net.WebSockets;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Microsoft.VisualBasic.CompilerServices;
 using Twitch.EventSub.API;
 using Twitch.EventSub.API.Models;
@@ -252,7 +251,7 @@ namespace Twitch.EventSub
                 foreach (var subscription in getSubscriptionsResponse.Data)
                 {
                     if (subscription.Transport.SessionId != _sessionId || subscription.Status != "enabled" ||
-                        DateTime.UtcNow - ReplayProtection.ConvertToRfc3339WithNanoseconds(subscription.CreatedAt) > TimeSpan.FromHours(1))
+                        DateTime.UtcNow - ReplayProtection.ParseDateTimeString(subscription.CreatedAt) > TimeSpan.FromHours(1))
                     {
                         if (!await ApiTryUnSubscribeAsync(_clientId, _accessToken, subscription.Id, clSource))
                         {
@@ -360,7 +359,7 @@ namespace Twitch.EventSub
             {
                 _logger.LogError("Api call failed due to: {ex}", ex);
             }
-            //This is expected behavior. If we get null or false, we handle it in higher part of fuction
+            //This is expected behavior. If we get null or false, we handle it in higher part of function
             return default;
         }
     }

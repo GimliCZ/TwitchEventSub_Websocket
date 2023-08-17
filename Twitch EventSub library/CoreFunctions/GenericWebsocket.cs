@@ -198,7 +198,7 @@ namespace Twitch.EventSub.CoreFunctions
         /// </summary>
         private async void SendRoutineTick(CancellationToken cancel)
         {
-            if (_sendIsProcessing)
+            if (_sendIsProcessing || _clientWebSocket == null)
             {
                 // Sending is in progress, wait before it's finished
                 return;
@@ -243,8 +243,9 @@ namespace Twitch.EventSub.CoreFunctions
         /// </summary>
         public async Task DisconnectAsync()
         {
-            _sendTimer?.Change(Timeout.InfiniteTimeSpan, TimeSpan.Zero);
             _sendCancelSource?.Cancel();
+            _messagesToSend.Clear();
+            _sendTimer?.Change(Timeout.InfiniteTimeSpan, TimeSpan.Zero);
 
             if (_clientWebSocket == null ||
                 _clientWebSocket.State != WebSocketState.Open ||
