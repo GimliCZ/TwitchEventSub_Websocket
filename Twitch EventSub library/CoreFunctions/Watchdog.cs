@@ -17,7 +17,11 @@ namespace Twitch.EventSub.CoreFunctions
             _isRunning = false;
             _logger = logger;
         }
-
+        /// <summary>
+        /// Starts Watchdog
+        /// </summary>
+        /// <param name="timeout"></param>
+        /// <exception cref="ArgumentException"></exception>
         public void Start(int timeout)
         {
             if (timeout <= 0)
@@ -35,7 +39,10 @@ namespace Twitch.EventSub.CoreFunctions
                 _logger.LogDebug("Watchdog is already running.");
             }
         }
-
+        /// <summary>
+        /// Renews timing 
+        /// </summary>
+        /// <exception cref="NullReferenceException"></exception>
         public void Reset()
         {
             if (_timer == null) throw new NullReferenceException();
@@ -49,7 +56,10 @@ namespace Twitch.EventSub.CoreFunctions
                 _logger.LogDebug("Watchdog is not running. Please start it first.");
             }
         }
-
+        /// <summary>
+        /// Stops watchdog
+        /// </summary>
+        /// <exception cref="NullReferenceException"></exception>
         public void Stop()
         {
             if (_timer == null) throw new NullReferenceException();
@@ -64,7 +74,10 @@ namespace Twitch.EventSub.CoreFunctions
                 _logger.LogDebug("Watchdog is not running.");
             }
         }
-
+        /// <summary>
+        /// Triggers when watched time is overdue
+        /// </summary>
+        /// <param name="state"></param>
         private async void OnTimerElapsed(object? state)
         {
             _timer.Change(Timeout.Infinite, Timeout.Infinite);

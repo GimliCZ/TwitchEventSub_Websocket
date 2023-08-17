@@ -73,7 +73,7 @@ namespace Twitch.EventSub
             {
                 return;
             }
-
+            _watchdog.Stop();
             await _socket.DisconnectAsync();
             _connectionActive = false;
         }
