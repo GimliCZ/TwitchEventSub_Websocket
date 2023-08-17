@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.33627.172
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Medbot.Twitch.EventSub", "Twitch EventSub library\Medbot.Twitch.EventSub.csproj", "{42E5A136-4AE2-42BB-9975-41AEF1BD2C7B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Twitch.EventSub_Websocket", "Twitch EventSub library\Twitch.EventSub_Websocket.csproj", "{42E5A136-4AE2-42BB-9975-41AEF1BD2C7B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
