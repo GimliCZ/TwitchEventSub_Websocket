@@ -1,6 +1,8 @@
 # TwitchEventSub_Websocket
 <p align="center">
   <img src="https://img.shields.io/badge/Platform-.NET%206-orange.svg"style="max-height: 300px;" alt="Platform: iOS">
+  <img src="https://img.shields.io/nuget/v/Twitch.EventSub.Websocket"style="max-height: 300px;" alt="Platform: iOS">
+  <img src="https://img.shields.io/nuget/dt/Twitch.EventSub.Websocket"style="max-height: 300px;" alt="Platform: iOS">
 </p>
 
 ## About
