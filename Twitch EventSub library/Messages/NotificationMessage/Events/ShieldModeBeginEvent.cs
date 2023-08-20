@@ -3,7 +3,7 @@ using Twitch.EventSub.Messages.NotificationMessage;
 
 namespace Twitch.EventSub.Library.Messages.NotificationMessage.Events
 {
-    public class ShieldModeBeginEvent:WebSocketNotificationEvent
+    public class ShieldModeBeginEvent : WebSocketNotificationEvent
     {
         [JsonProperty("moderator_user_id")]
         public string ModeratorUserId { get; set; }

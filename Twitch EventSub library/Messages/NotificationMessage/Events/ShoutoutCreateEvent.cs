@@ -3,7 +3,7 @@ using Twitch.EventSub.Messages.NotificationMessage;
 
 namespace Twitch.EventSub.Library.Messages.NotificationMessage.Events
 {
-    public class ShoutoutCreateEvent:WebSocketNotificationEvent
+    public class ShoutoutCreateEvent : WebSocketNotificationEvent
     {
         [JsonProperty("moderator_user_id")]
         public string ModeratorUserId { get; set; }

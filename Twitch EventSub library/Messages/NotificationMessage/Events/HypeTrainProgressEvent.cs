@@ -1,6 +1,6 @@
 ﻿namespace Twitch.EventSub.Library.Messages.NotificationMessage.Events
 {
-    public class HypeTrainProgressEvent:HypeTrainBeginEvent
+    public class HypeTrainProgressEvent : HypeTrainBeginEvent
     {
     }
 }

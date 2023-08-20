@@ -1,14 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Twitch.EventSub.Messages.NotificationMessage;
 
 namespace Twitch.EventSub.Library.Messages.NotificationMessage.Events
 {
-    public class GoalBeginEvent:WebSocketNotificationEvent
+    public class GoalBeginEvent : WebSocketNotificationEvent
     {
         [JsonProperty("id")]
         public string Id { get; set; }

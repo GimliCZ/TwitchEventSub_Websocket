@@ -2,7 +2,7 @@
 
 namespace Twitch.EventSub.Library.Messages.NotificationMessage.Events
 {
-    public class StreamOfflineEvent:WebSocketNotificationEvent
+    public class StreamOfflineEvent : WebSocketNotificationEvent
     {
     }
 }

@@ -2,6 +2,9 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Twitch.EventSub.CoreFunctions;
+using Twitch.EventSub.Interfaces;
+using Twitch.EventSub.Library.CoreFunctions;
+using Twitch.EventSub.Library.Messages.NotificationMessage.Events;
 using Twitch.EventSub.Messages;
 using Twitch.EventSub.Messages.KeepAliveMessage;
 using Twitch.EventSub.Messages.NotificationMessage;
@@ -11,12 +14,10 @@ using Twitch.EventSub.Messages.ReconnectMessage;
 using Twitch.EventSub.Messages.RevocationMessage;
 using Twitch.EventSub.Messages.SharedContents;
 using Twitch.EventSub.Messages.WelcomeMessage;
-using Twitch.EventSub.Library.CoreFunctions;
-using Twitch.EventSub.Library.Messages.NotificationMessage.Events;
 
 namespace Twitch.EventSub
 {
-    public class EventSubSocketWrapper
+    public class EventSubSocketWrapper : IEventSubSocketWrapper
     {
         private const string DefaultWebSocketUrl = "wss://eventsub.wss.twitch.tv/ws";
         private readonly ILogger _logger;
@@ -24,17 +25,17 @@ namespace Twitch.EventSub
         private bool _awaitForReconnect = false;
         private readonly Watchdog _watchdog;
 
-        public string? SessionId { get; private set; }
+        private string? SessionId { get; set; }
 
         private readonly GenericWebsocket _socket;
 
         private int _keepAlive;
         private bool _connectionActive;
 
-        public event AsyncEventHandler<string?> OnRegisterSubscriptions;
-        public event AsyncEventHandler<WebSocketNotificationPayload> OnNotificationMessage;
-        public event AsyncEventHandler<WebSocketRevocationMessage> OnRevocationMessage;
-        public event AsyncEventHandler<string?> OnOutsideDisconnect;
+        public event AsyncEventHandler<string?> OnRegisterSubscriptionsAsync;
+        public event AsyncEventHandler<WebSocketNotificationPayload> OnNotificationMessageAsync;
+        public event AsyncEventHandler<WebSocketRevocationMessage> OnRevocationMessageAsync;
+        public event AsyncEventHandler<string?> OnOutsideDisconnectAsync;
 
         public EventSubSocketWrapper(ILogger logger,
             ILogger socketLogger,
@@ -43,18 +44,18 @@ namespace Twitch.EventSub
         {
             _socket = new GenericWebsocket(socketLogger, processingSpeed);
             _logger = logger;
-            _socket.OnMessageReceived += Socket_OnMessageReceived;
-            _socket.OnServerSideTerminationReasoning += Socket_OnServerSideTerminationReasoning;
+            _socket.OnMessageReceivedAsync += SocketOnMessageReceivedAsync;
+            _socket.OnServerSideTerminationAsync += OnServerSideTerminationAsync;
             _replayProtection = new ReplayProtection(10);
             _watchdog = new Watchdog(watchdogLogger);
-            _watchdog.WatchdogTimeout += OnWatchdogTimeout;
+            _watchdog.WatchdogTimeout += OnWatchdogTimeoutAsync;
         }
 
-        private async Task Socket_OnServerSideTerminationReasoning(object sender, string e)
+        private async Task OnServerSideTerminationAsync(object sender, string e)
         {
             _logger.LogInformation(e);
             _connectionActive = false;
-            await OnOutsideDisconnect.TryInvoke(this, e);
+            await OnOutsideDisconnectAsync.TryInvoke(this, e);
         }
 
         public async Task<bool> ConnectAsync(string connectUrl = DefaultWebSocketUrl)
@@ -78,12 +79,12 @@ namespace Twitch.EventSub
             _connectionActive = false;
         }
 
-        private Task Socket_OnMessageReceived(object sender, string e)
+        private Task SocketOnMessageReceivedAsync(object sender, string e)
         {
             return ParseWebSocketMessageAsync(e);
         }
 
-        public Task ParseWebSocketMessageAsync(string e)
+        private Task ParseWebSocketMessageAsync(string e)
         {
             try
             {
@@ -108,12 +109,12 @@ namespace Twitch.EventSub
 
                 return message switch
                 {
-                    WebSocketWelcomeMessage welcomeMessage => WelcomeMessageProcessing(welcomeMessage),
+                    WebSocketWelcomeMessage welcomeMessage => WelcomeMessageProcessingAsync(welcomeMessage),
                     WebSocketKeepAliveMessage => KeepAliveMessageProcessing(),
-                    WebSocketPingMessage => PingMessageProcessing(),
-                    WebSocketNotificationMessage notificationMessage => NotificationMessageProcessing(notificationMessage),
-                    WebSocketReconnectMessage reconnectMessage => ReconnectMessageProcessing(reconnectMessage),
-                    WebSocketRevocationMessage revocationMessage => RevocationMessageProcessing(revocationMessage),
+                    WebSocketPingMessage => PingMessageProcessingAsync(),
+                    WebSocketNotificationMessage notificationMessage => NotificationMessageProcessingAsync(notificationMessage),
+                    WebSocketReconnectMessage reconnectMessage => ReconnectMessageProcessingAsync(reconnectMessage),
+                    WebSocketRevocationMessage revocationMessage => RevocationMessageProcessingAsync(revocationMessage),
                     _ => throw new JsonSerializationException($"Unsupported message_type: {message}")
                 };
             }
@@ -181,9 +182,10 @@ namespace Twitch.EventSub
 
         private static WebSocketNotificationPayload CreateNotificationPayload(JToken payload)
         {
-            var resultMessage = new WebSocketNotificationPayload();
-
-            resultMessage.Subscription = payload["subscription"]?.ToObject<WebSocketSubscription>();
+            var resultMessage = new WebSocketNotificationPayload
+            {
+                Subscription = payload["subscription"]?.ToObject<WebSocketSubscription>()
+            };
 
             // Deserialize the event payload based on the event type
             switch (payload["subscription"]?["type"]?.ToObject<string>())
@@ -373,10 +375,10 @@ namespace Twitch.EventSub
             return resultMessage;
         }
 
-        private async Task WelcomeMessageProcessing(WebSocketWelcomeMessage message)
+        private async Task WelcomeMessageProcessingAsync(WebSocketWelcomeMessage message)
         {
             SessionId = message?.Payload?.Session.Id;
-            await OnRegisterSubscriptions.TryInvoke(this, SessionId);
+            await OnRegisterSubscriptionsAsync.TryInvoke(this, SessionId);
             // keep alive in sec + 10% tolerance
             if (message?.Payload?.Session.KeepAliveTimeoutSeconds != null)
             {
@@ -385,13 +387,13 @@ namespace Twitch.EventSub
             _watchdog.Start(_keepAlive);
         }
 
-        private async Task NotificationMessageProcessing(WebSocketNotificationMessage message)
+        private async Task NotificationMessageProcessingAsync(WebSocketNotificationMessage message)
         {
             if (message.Payload != null)
-                await OnNotificationMessage.TryInvoke(this, message.Payload);
+                await OnNotificationMessageAsync.TryInvoke(this, message.Payload);
         }
 
-        private async Task ReconnectMessageProcessing(WebSocketReconnectMessage message)
+        private async Task ReconnectMessageProcessingAsync(WebSocketReconnectMessage message)
         {
 
 
@@ -410,20 +412,20 @@ namespace Twitch.EventSub
             _watchdog.Start(_keepAlive);
             SessionId = message?.Payload?.Session.Id;
 
-            await OnRegisterSubscriptions.TryInvoke(this, SessionId);
+            await OnRegisterSubscriptionsAsync.TryInvoke(this, SessionId);
 
             _awaitForReconnect = false;
         }
 
-        private async Task RevocationMessageProcessing(WebSocketRevocationMessage message)
+        private async Task RevocationMessageProcessingAsync(WebSocketRevocationMessage message)
         {
-            if (OnRevocationMessage != null)
+            if (OnRevocationMessageAsync != null)
             {
-                await OnRevocationMessage.TryInvoke(this, message);
+                await OnRevocationMessageAsync.TryInvoke(this, message);
             }
         }
 
-        private Task PingMessageProcessing()
+        private Task PingMessageProcessingAsync()
         {
             if (_awaitForReconnect == false)
             {
@@ -439,13 +441,13 @@ namespace Twitch.EventSub
             return Task.CompletedTask;
         }
 
-        private async Task OnWatchdogTimeout(object sender, string e)
+        private async Task OnWatchdogTimeoutAsync(object sender, string e)
         {
             await _socket.DisconnectAsync();
             _logger.LogInformation("Server didn't respond in time");
-            if (OnOutsideDisconnect != null)
+            if (OnOutsideDisconnectAsync != null)
             {
-                await OnOutsideDisconnect.TryInvoke(this, e);
+                await OnOutsideDisconnectAsync.TryInvoke(this, e);
             }
             _connectionActive = false;
         }

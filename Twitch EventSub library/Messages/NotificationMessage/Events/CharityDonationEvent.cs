@@ -3,7 +3,7 @@ using Twitch.EventSub.Messages.NotificationMessage;
 
 namespace Twitch.EventSub.Library.Messages.NotificationMessage.Events
 {
-    public class CharityDonationEvent:WebSocketNotificationEvent
+    public class CharityDonationEvent : WebSocketNotificationEvent
     {
         [JsonProperty("id")]
         public string Id { get; set; }

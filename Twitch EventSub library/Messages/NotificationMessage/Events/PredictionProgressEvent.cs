@@ -1,6 +1,6 @@
 ﻿namespace Twitch.EventSub.Library.Messages.NotificationMessage.Events
 {
-    public class PredictionProgressEvent:PredictionBeginEvent
+    public class PredictionProgressEvent : PredictionBeginEvent
     {
     }
 }
