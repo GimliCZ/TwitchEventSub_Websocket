@@ -25,7 +25,7 @@ namespace Twitch.EventSub.API
         /// <returns>True on success, false on failure</returns>
         /// <exception cref="InvalidAccessTokenException"></exception>
         /// <exception cref="Exception">This state means that accessToken is not set up properly for given request</exception>
-        public async Task<bool> SubscribeAsync(string? clientId, string? accessToken, CreateSubscriptionRequest request,CancellationTokenSource clSource)
+        public async Task<bool> SubscribeAsync(string? clientId, string? accessToken, CreateSubscriptionRequest request, CancellationTokenSource clSource)
         {
             using (var httpClient = new HttpClient())
             {
@@ -36,7 +36,7 @@ namespace Twitch.EventSub.API
                     string requestBody = JsonConvert.SerializeObject(request);
                     var content = new StringContent(requestBody, Encoding.UTF8, "application/json");
 
-                    var response = await httpClient.PostAsync(_baseUrl, content,clSource.Token);
+                    var response = await httpClient.PostAsync(_baseUrl, content, clSource.Token);
                     return response.StatusCode switch
                     {
                         HttpStatusCode.Accepted => true,
@@ -71,7 +71,7 @@ namespace Twitch.EventSub.API
                 try
                 {
                     var url = $"{_baseUrl}?id={subscriptionId}";
-                    var response = await httpClient.DeleteAsync(url,clSource.Token);
+                    var response = await httpClient.DeleteAsync(url, clSource.Token);
                     return response.StatusCode switch
                     {
                         HttpStatusCode.NoContent => true,
@@ -97,7 +97,7 @@ namespace Twitch.EventSub.API
         /// <param name="after"></param>
         /// <returns cref="GetSubscriptionsResponse"> Provides segment of subscriptions, content MAY BE NULL</returns>
         /// <exception cref="InvalidAccessTokenException"></exception>
-        private async Task<GetSubscriptionsResponse?> GetSubscriptionsAsync(string? clientId, string? accessToken, StatusProvider.SubscriptionStatus statusSelector,CancellationTokenSource clSource, string? after = null)
+        private async Task<GetSubscriptionsResponse?> GetSubscriptionsAsync(string? clientId, string? accessToken, StatusProvider.SubscriptionStatus statusSelector, CancellationTokenSource clSource, string? after = null)
         {
             var status = StatusProvider.GetStatusString(statusSelector);
 
@@ -116,7 +116,7 @@ namespace Twitch.EventSub.API
                     if (!string.IsNullOrEmpty(after))
                         queryBuilder.Append($"&after={WebUtility.UrlEncode(after)}");
 
-                    var response = await httpClient.GetAsync(queryBuilder.ToString(),clSource.Token);
+                    var response = await httpClient.GetAsync(queryBuilder.ToString(), clSource.Token);
                     return response.StatusCode switch
                     {
                         HttpStatusCode.OK => JsonConvert.DeserializeObject<GetSubscriptionsResponse>(await response.Content.ReadAsStringAsync(clSource.Token)),

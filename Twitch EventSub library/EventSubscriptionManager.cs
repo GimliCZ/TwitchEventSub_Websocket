@@ -3,11 +3,12 @@ using Microsoft.VisualBasic.CompilerServices;
 using Twitch.EventSub.API;
 using Twitch.EventSub.API.Models;
 using Twitch.EventSub.CoreFunctions;
+using Twitch.EventSub.Interfaces;
 using Twitch.EventSub.Library.CoreFunctions;
 
 namespace Twitch.EventSub
 {
-    public class EventSubscriptionManager
+    public class EventSubscriptionManager : IEventSubscriptionManager
     {
         private readonly TwitchParcialApi _api;
         private string? _sessionId;
@@ -23,7 +24,7 @@ namespace Twitch.EventSub
 
         private List<CreateSubscriptionRequest>? _requestedSubscriptions;
 
-        public event AsyncEventHandler<InvalidAccessTokenException> OnRefreshTokenRequest;
+        public event AsyncEventHandler<InvalidAccessTokenException> OnRefreshTokenRequestAsync;
 
         public EventSubscriptionManager(ILogger logger, ILogger ApiLogger)
         {
@@ -39,9 +40,9 @@ namespace Twitch.EventSub
         /// <param name="sessionId"></param>
         /// <param name="requestedSubscriptions"></param>
         /// <returns></returns>
-        public async Task Setup(string? clientId, string? accessToken, string? sessionId, List<CreateSubscriptionRequest>? requestedSubscriptions)
+        public async Task SetupAsync(string? clientId, string? accessToken, string? sessionId, List<CreateSubscriptionRequest>? requestedSubscriptions)
         {
-            
+
             _clientId = clientId ?? throw new ArgumentNullException(nameof(clientId));
             _accessToken = accessToken ?? throw new ArgumentNullException(nameof(accessToken));
             _sessionId = sessionId ?? throw new ArgumentNullException(nameof(sessionId));
@@ -70,7 +71,7 @@ namespace Twitch.EventSub
         /// <returns></returns>
         /// <exception cref="InvalidOperationException">Setup was not run</exception>
         /// <exception cref="Exception">May crash, if dupes found in list</exception>
-        public async Task UpdateOnFly(string? clientId, string? accessToken, List<CreateSubscriptionRequest>? requestedSubscriptions)
+        public async Task UpdateOnFlyAsync(string? clientId, string? accessToken, List<CreateSubscriptionRequest>? requestedSubscriptions)
         {
             if (!_setup)
             {
@@ -96,7 +97,7 @@ namespace Twitch.EventSub
                 }
                 _requestedSubscriptions = requestedSubscriptions;
             }
-            await RunCheck(_cancelSource);
+            await RunCheckAsync(_cancelSource);
         }
         /// <summary>
         /// Creates repeated cycle for checking subscriptons. Even tho we should know about every change in
@@ -121,10 +122,10 @@ namespace Twitch.EventSub
             _isRunning = true;
             //Subscriptions decay every hour, having 30 min is just to be on safe side
 
-            _backgroundTask = Task.Run(BackgroundCheck,_cancelSource.Token);
+            _backgroundTask = Task.Run(BackgroundCheckAsync, _cancelSource.Token);
         }
 
-        public async Task RevocationResolver(Messages.RevocationMessage.WebSocketRevocationMessage e)
+        public async Task RevocationResolverAsync(Messages.RevocationMessage.WebSocketRevocationMessage e)
         {
             if (_requestedSubscriptions == null || _clientId == null || _accessToken == null)
             {
@@ -142,14 +143,14 @@ namespace Twitch.EventSub
 
         }
 
-        private async Task BackgroundCheck()
+        private async Task BackgroundCheckAsync()
         {
             _timer = new PeriodicTimer(TimeSpan.FromMinutes(30));
             try
             {
                 do
                 {
-                    await RunCheck(_cancelSource);
+                    await RunCheckAsync(_cancelSource);
                     _logger.LogInformation("Check run.");
                 } while (await _timer.WaitForNextTickAsync(_cancelSource.Token));
             }
@@ -163,7 +164,7 @@ namespace Twitch.EventSub
         /// Stops repeated checking
         /// </summary>
         /// <returns></returns>
-        public async Task Stop()
+        public async Task StopAsync()
         {
             if (!_setup)
             {
@@ -173,7 +174,7 @@ namespace Twitch.EventSub
             if (_isRunning)
             {
                 _isRunning = false;
-                await Clear(_cancelSource);
+                await ClearAsync(_cancelSource);
                 _cancelSource.Cancel();
                 _timer?.Dispose();
             }
@@ -182,7 +183,7 @@ namespace Twitch.EventSub
         /// Removes all subs, it has to be unsubscribed for reasons of cost dependent on session id
         /// </summary>
         /// <returns></returns>
-        private async Task Clear(CancellationTokenSource clSource)
+        private async Task ClearAsync(CancellationTokenSource clSource)
         {
             if (_clientId == null || _accessToken == null)
             {
@@ -208,7 +209,7 @@ namespace Twitch.EventSub
         /// <returns></returns>
         /// <exception cref="IncompleteInitialization">Setup was not run</exception>
         /// <exception cref="Exception">Trigger when requested list has dupes</exception>
-        public async Task RunCheck(CancellationTokenSource clSource)
+        private async Task RunCheckAsync(CancellationTokenSource clSource)
         {
             if (_checkRunning)
             {
@@ -314,19 +315,21 @@ namespace Twitch.EventSub
             _checkRunning = false;
         }
 
-        public async Task<bool> ApiTrySubscribeAsync(string clientId, string accessToken, CreateSubscriptionRequest create, CancellationTokenSource clSource)
+        private async Task<bool> ApiTrySubscribeAsync(string clientId, string accessToken, CreateSubscriptionRequest create, CancellationTokenSource clSource)
         {
             async Task<bool> TrySubscribe() => await _api.SubscribeAsync(clientId, accessToken, create, clSource);
             return await TryFuncAsync(TrySubscribe);
         }
-        public async Task<bool> ApiTryUnSubscribeAsync(string clientId, string accessToken, string subId, CancellationTokenSource clSource)
+
+        private async Task<bool> ApiTryUnSubscribeAsync(string clientId, string accessToken, string subId, CancellationTokenSource clSource)
         {
             async Task<bool> TryUnSubscribe() => await _api.UnSubscribeAsync(clientId, accessToken, subId, clSource);
             return await TryFuncAsync(TryUnSubscribe);
         }
-        public async Task<List<GetSubscriptionsResponse>> ApiTryGetAllSubscriptionsAsync(string clientId, string accessToken,CancellationTokenSource clSource, StatusProvider.SubscriptionStatus statusSelector)
+
+        private async Task<List<GetSubscriptionsResponse>> ApiTryGetAllSubscriptionsAsync(string clientId, string accessToken, CancellationTokenSource clSource, StatusProvider.SubscriptionStatus statusSelector)
         {
-            async Task<List<GetSubscriptionsResponse>> TryGetAllSubscriptionsAsync() => await _api.GetAllSubscriptionsAsync(clientId, accessToken,clSource ,statusSelector);
+            async Task<List<GetSubscriptionsResponse>> TryGetAllSubscriptionsAsync() => await _api.GetAllSubscriptionsAsync(clientId, accessToken, clSource, statusSelector);
             return await TryFuncAsync(TryGetAllSubscriptionsAsync);
         }
 
@@ -347,7 +350,7 @@ namespace Twitch.EventSub
             catch (InvalidAccessTokenException ex)
             {
                 //procedure must run UpdateOnFly function for proper change
-                await OnRefreshTokenRequest.TryInvoke(this, ex);
+                await OnRefreshTokenRequestAsync.TryInvoke(this, ex);
                 return await apiCallAction();
 
             }

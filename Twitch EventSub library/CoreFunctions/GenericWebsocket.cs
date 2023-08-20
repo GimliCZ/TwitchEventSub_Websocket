@@ -23,8 +23,8 @@ namespace Twitch.EventSub.CoreFunctions
 
         private const int MaximumWaitTimeBeforeForcingDisconnection = 2000; // In ms
 
-        public event AsyncEventHandler<string>? OnMessageReceived;
-        public event AsyncEventHandler<string>? OnServerSideTerminationReasoning;
+        public event AsyncEventHandler<string>? OnMessageReceivedAsync;
+        public event AsyncEventHandler<string>? OnServerSideTerminationAsync;
 
         public GenericWebsocket(
             ILogger logger,
@@ -39,9 +39,9 @@ namespace Twitch.EventSub.CoreFunctions
         {
             try
             {
-                if (OnMessageReceived is not null)
+                if (OnMessageReceivedAsync is not null)
                 {
-                    await OnMessageReceived(this, e);
+                    await OnMessageReceivedAsync(this, e);
                 }
             }
             catch (Exception ex)
@@ -154,9 +154,9 @@ namespace Twitch.EventSub.CoreFunctions
                 receiveResult.MessageType == WebSocketMessageType.Close)
             {
 
-                if (receiveResult.CloseStatusDescription != null && OnServerSideTerminationReasoning != null)
+                if (receiveResult.CloseStatusDescription != null && OnServerSideTerminationAsync != null)
                 {
-                    await OnServerSideTerminationReasoning.TryInvoke(this, receiveResult.CloseStatusDescription);
+                    await OnServerSideTerminationAsync.TryInvoke(this, receiveResult.CloseStatusDescription);
                 }
                 _sendCancelSource?.Cancel();
                 await _clientWebSocket.CloseOutputAsync(
@@ -261,7 +261,7 @@ namespace Twitch.EventSub.CoreFunctions
             {
                 await _clientWebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", timeout.Token);
 
-                 
+
                 if (_clientWebSocket.State != WebSocketState.Closed)
                 {
                     _logger.LogWarning("Requested websocket disconnection was not successful. Actual status: {State}",

@@ -42,7 +42,7 @@ namespace Twitch.EventSub.CoreFunctions
         public static DateTime ParseDateTimeString(string timestamp)
         {
             //ConvertToRfc3339WithNanoseconds
-            if (DateTime.TryParse(timestamp,null, System.Globalization.DateTimeStyles.RoundtripKind, out var dateTime))
+            if (DateTime.TryParse(timestamp, null, System.Globalization.DateTimeStyles.RoundtripKind, out var dateTime))
             {
                 return dateTime.ToUniversalTime();
             }
