@@ -10,7 +10,7 @@ namespace Twitch.EventSub.CoreFunctions
         private bool _isRunning;
         private readonly ILogger _logger;
 
-        public event AsyncEventHandler<string> WatchdogTimeout;
+        public event AsyncEventHandler<string> OnWatchdogTimeout;
 
         public Watchdog(ILogger logger)
         {
@@ -25,18 +25,18 @@ namespace Twitch.EventSub.CoreFunctions
         public void Start(int timeout)
         {
             if (timeout <= 0)
-                throw new ArgumentException("Timeout should be greater than 0 milliseconds.");
+                throw new ArgumentException("[EventSubClient] - [Watchdog] Timeout should be greater than 0 milliseconds.");
             _timeout = timeout;
 
             if (!_isRunning)
             {
                 _isRunning = true;
                 _timer = new Timer(OnTimerElapsed, null, _timeout, _timeout);
-                _logger.LogDebug("Watchdog started.");
+                _logger.LogDebug("[EventSubClient] - [Watchdog] Watchdog started.");
             }
             else
             {
-                _logger.LogDebug("Watchdog is already running.");
+                _logger.LogDebug("[EventSubClient] - [Watchdog] Watchdog is already running.");
             }
         }
         /// <summary>
@@ -49,11 +49,11 @@ namespace Twitch.EventSub.CoreFunctions
             if (_isRunning)
             {
                 _timer.Change(_timeout, Timeout.Infinite);
-                _logger.LogDebug("Watchdog reset.");
+                _logger.LogDebug("[EventSubClient] - [Watchdog] Watchdog reset.");
             }
             else
             {
-                _logger.LogDebug("Watchdog is not running. Please start it first.");
+                _logger.LogDebug("[EventSubClient] - [Watchdog] Watchdog is not running. Please start it first.");
             }
         }
         /// <summary>
@@ -67,11 +67,11 @@ namespace Twitch.EventSub.CoreFunctions
             {
                 _timer.Change(Timeout.Infinite, Timeout.Infinite);
                 _isRunning = false;
-                _logger.LogDebug("Watchdog stopped.");
+                _logger.LogDebug("[EventSubClient] - [Watchdog] Watchdog stopped.");
             }
             else
             {
-                _logger.LogDebug("Watchdog is not running.");
+                _logger.LogDebug("[EventSubClient] - [Watchdog] Watchdog is not running.");
             }
         }
         /// <summary>
@@ -82,10 +82,18 @@ namespace Twitch.EventSub.CoreFunctions
         {
             _timer.Change(Timeout.Infinite, Timeout.Infinite);
             _isRunning = false;
-            _logger.LogInformation("Watchdog timeout! Something went wrong.");
+            _logger.LogInformation("[EventSubClient] - [Watchdog] Watchdog timeout! Something went wrong.");
 
             // Raise the WatchdogTimeout event
-            await WatchdogTimeout.TryInvoke(this, "Server didn't respond in time")!;
+            try
+            {
+                await OnWatchdogTimeout.TryInvoke(this, "[EventSubClient] - [Watchdog] Server didn't respond in time")!;
+            }
+            catch (Exception ex)
+            {
+                //catch any exceptions, we dont want crash
+                _logger.LogWarning("Watchdog detected exception: {ex}",ex);
+            }
         }
     }
 }

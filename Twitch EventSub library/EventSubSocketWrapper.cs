@@ -48,7 +48,7 @@ namespace Twitch.EventSub
             _socket.OnServerSideTerminationAsync += OnServerSideTerminationAsync;
             _replayProtection = new ReplayProtection(10);
             _watchdog = new Watchdog(watchdogLogger);
-            _watchdog.WatchdogTimeout += OnWatchdogTimeoutAsync;
+            _watchdog.OnWatchdogTimeout += OnWatchdogTimeoutAsync;
         }
 
         private async Task OnServerSideTerminationAsync(object sender, string e)
@@ -96,7 +96,7 @@ namespace Twitch.EventSub
                 catch (JsonException ex)
                 {
                     // Log the parsing error and return immediately
-                    _logger.LogError("Error while parsing WebSocket message: " + ex.Message, ex);
+                    _logger.LogError("[EventSubClient] - [EventSubSocketWrapper] Error while parsing WebSocket message: " + ex.Message, ex);
                     return Task.CompletedTask;
                 }
 
@@ -121,7 +121,7 @@ namespace Twitch.EventSub
             catch (Exception ex)
             {
                 // Catch any other unexpected exceptions and log them
-                _logger.LogError("Unexpected error while processing WebSocket message: " + ex.Message, ex);
+                _logger.LogError("[EventSubClient] - [EventSubSocketWrapper] Unexpected error while processing WebSocket message: " + ex.Message, ex);
                 return Task.CompletedTask;
             }
         }
@@ -405,7 +405,7 @@ namespace Twitch.EventSub
                 _connectionActive = await _socket.ConnectAsync(message.Payload.Session.ReconnectUrl);
                 if (!_connectionActive)
                 {
-                    _logger.LogInformation("connection lost during reconnect");
+                    _logger.LogInformation("[EventSubClient] - [EventSubSocketWrapper] connection lost during reconnect");
                     return;
                 }
             }
@@ -444,7 +444,7 @@ namespace Twitch.EventSub
         private async Task OnWatchdogTimeoutAsync(object sender, string e)
         {
             await _socket.DisconnectAsync();
-            _logger.LogInformation("Server didn't respond in time");
+            _logger.LogInformation("[EventSubClient] - [EventSubSocketWrapper] Server didn't respond in time");
             if (OnOutsideDisconnectAsync != null)
             {
                 await OnOutsideDisconnectAsync.TryInvoke(this, e);

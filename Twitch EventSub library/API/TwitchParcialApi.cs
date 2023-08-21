@@ -49,7 +49,7 @@ namespace Twitch.EventSub.API
                 }
                 catch (HttpRequestException ex)
                 {
-                    _logger.LogInformation($"Error: {ex.Message}");
+                    _logger.LogInformation($"[EventSubClient] - [TwitchPartialApi] Error: {ex.Message}");
                     return false;
                 }
             }
@@ -83,7 +83,7 @@ namespace Twitch.EventSub.API
                 }
                 catch (HttpRequestException ex)
                 {
-                    _logger.LogInformation($"Error: {ex.Message}");
+                    _logger.LogInformation($"[EventSubClient] - [TwitchPartialApi] Error: {ex.Message}");
                     return false;
                 }
             }
@@ -130,7 +130,7 @@ namespace Twitch.EventSub.API
                 }
                 catch (HttpRequestException ex)
                 {
-                    _logger.LogInformation($"Error: {ex.Message}");
+                    _logger.LogInformation($"[EventSubClient] - [TwitchPartialApi] Error: {ex.Message}");
                     return default;
                 }
             }
@@ -163,7 +163,7 @@ namespace Twitch.EventSub.API
                 }
                 else
                 {
-                    _logger.LogInformation("Response returned null cause of invalid userId or filter parameter");
+                    _logger.LogInformation("[EventSubClient] - [TwitchPartialApi] Response returned null cause of invalid userId or filter parameter");
                     break;
                 }
 
@@ -174,7 +174,7 @@ namespace Twitch.EventSub.API
             }
             if (allSubscriptions.Count == 0)
             {
-                _logger.LogInformation("List of subscriptions returned EMPTY!");
+                _logger.LogInformation("[EventSubClient] - [TwitchPartialApi] List of subscriptions returned EMPTY!");
             }
 
             return allSubscriptions;
