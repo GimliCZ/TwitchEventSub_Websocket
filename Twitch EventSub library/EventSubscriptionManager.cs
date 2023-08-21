@@ -60,7 +60,7 @@ namespace Twitch.EventSub
             }
             _requestedSubscriptions = requestedSubscriptions;
             _setup = true;
-            _logger.LogInformation("Event Sub ready: Client Id: " + clientId + " accessToken " + accessToken + " session id" + sessionId);
+            _logger.LogInformation("[EventSubClient] - [EventSubscriptionManager]  Event Sub ready: Client Id: " + clientId + " accessToken " + accessToken + " session id" + sessionId);
         }
         /// <summary>
         /// This Function servers for handeling AccessToken changes ONLY
@@ -136,9 +136,9 @@ namespace Twitch.EventSub
             {
                 if (!await ApiTrySubscribeAsync(_clientId, _accessToken, sub, _cancelSource))
                 {
-                    _logger.LogInformation("Failed to subscribe subscription during revocation");
+                    _logger.LogInformation("[EventSubClient] - [EventSubscriptionManager] Failed to subscribe subscription during revocation");
                 }
-                _logger.LogInformation("Refreshed sub due revocation: " + sub.Type + "caused by " + e?.Payload?.Status);
+                _logger.LogInformation("[EventSubClient] - [EventSubscriptionManager] Refreshed sub due revocation: " + sub.Type + "caused by " + e?.Payload?.Status);
             }
 
         }
@@ -151,7 +151,7 @@ namespace Twitch.EventSub
                 do
                 {
                     await RunCheckAsync(_cancelSource);
-                    _logger.LogInformation("Check run.");
+                    _logger.LogInformation("[EventSubClient] - [EventSubscriptionManager] Check run.");
                 } while (await _timer.WaitForNextTickAsync(_cancelSource.Token));
             }
             catch (TaskCanceledException)
@@ -196,9 +196,9 @@ namespace Twitch.EventSub
                 {
                     if (!await ApiTryUnSubscribeAsync(_clientId, _accessToken, subscription.Id, clSource))
                     {
-                        _logger.LogInformation("Failed to unsubscribe during clear" + subscription.Type);
+                        _logger.LogInformation("[EventSubClient] - [EventSubscriptionManager] Failed to unsubscribe during clear" + subscription.Type);
                     }
-                    _logger.LogInformation("Sub cleared: " + subscription.Type);
+                    _logger.LogInformation("[EventSubClient] - [EventSubscriptionManager] Sub cleared: " + subscription.Type);
                 }
             }
         }
@@ -244,7 +244,7 @@ namespace Twitch.EventSub
             //Yes we can get null from subscription function, if something goes horribly wrong.
             if (allSubscriptions == null)
             {
-                _logger.LogInformation("Subscription function returned null, skipping check");
+                _logger.LogInformation("[EventSubClient] - [EventSubscriptionManager] Subscription function returned null, skipping check");
                 return;
             }
             foreach (var getSubscriptionsResponse in allSubscriptions)
@@ -256,9 +256,9 @@ namespace Twitch.EventSub
                     {
                         if (!await ApiTryUnSubscribeAsync(_clientId, _accessToken, subscription.Id, clSource))
                         {
-                            _logger.LogInformation("Failed to unsubscribe during check" + subscription.Type);
+                            _logger.LogInformation("[EventSubClient] - [EventSubscriptionManager] Failed to unsubscribe during check" + subscription.Type);
                         }
-                        _logger.LogInformation("Cleared subscription:" + subscription.Type);
+                        _logger.LogInformation("[EventSubClient] - [EventSubscriptionManager] Cleared subscription:" + subscription.Type);
                     }
                 }
             }
@@ -293,9 +293,9 @@ namespace Twitch.EventSub
                     {
                         if (await ApiTryUnSubscribeAsync(_clientId, _accessToken, extraSubscription.Id, clSource))
                         {
-                            _logger.LogInformation("Failed to unsubscribe active subscription during check" + extraSubscription.Type);
+                            _logger.LogInformation("[EventSubClient] - [EventSubscriptionManager] Failed to unsubscribe active subscription during check" + extraSubscription.Type);
                         }
-                        _logger.LogInformation("Removed extra sub: " + extraSubscription.Type);
+                        _logger.LogInformation("[EventSubClient] - [EventSubscriptionManager] Removed extra sub: " + extraSubscription.Type);
                     }
                 }
 
@@ -306,9 +306,9 @@ namespace Twitch.EventSub
                     {
                         if (!await ApiTrySubscribeAsync(_clientId, _accessToken, missingSubscription, clSource))
                         {
-                            _logger.LogInformation("Failed to subscribe subscription during check");
+                            _logger.LogInformation("[EventSubClient] - [EventSubscriptionManager] Failed to subscribe subscription during check");
                         }
-                        _logger.LogInformation("Added extra sub: " + missingSubscription.Type);
+                        _logger.LogInformation("[EventSubClient] - [EventSubscriptionManager] Added extra sub: " + missingSubscription.Type);
                     }
                 }
             }
@@ -360,7 +360,7 @@ namespace Twitch.EventSub
             }
             catch (Exception ex)
             {
-                _logger.LogError("Api call failed due to: {ex}", ex);
+                _logger.LogError("[EventSubClient] - [EventSubscriptionManager] Api call failed due to: {ex}", ex);
             }
             //This is expected behavior. If we get null or false, we handle it in higher part of function
             return default;

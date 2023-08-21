@@ -46,7 +46,7 @@ namespace Twitch.EventSub.CoreFunctions
             }
             catch (Exception ex)
             {
-                _logger.LogError("Fail to invoke message received: {ex}", ex);
+                _logger.LogError("[EventSubClient] - [GenericWebsocket] Fail to invoke message received: {ex}", ex);
             }
         }
 
@@ -86,13 +86,13 @@ namespace Twitch.EventSub.CoreFunctions
             catch (WebSocketException ex)
             {
 #pragma warning disable CA2254
-                _logger.LogDebug("Case of incomplete disconnect - close sent / close received, proceed" + ex.Message);
+                _logger.LogDebug("[EventSubClient] - [GenericWebsocket] Case of incomplete disconnect - close sent / close received, proceed" + ex.Message);
 #pragma warning restore CA2254
             }
             catch (OperationCanceledException ex)
             {
 #pragma warning disable CA2254
-                _logger.LogDebug("Process canceled, proceed" + ex.Message);
+                _logger.LogDebug("[EventSubClient] - [GenericWebsocket] Process canceled, proceed" + ex.Message);
 #pragma warning restore CA2254
             }
 
@@ -122,7 +122,7 @@ namespace Twitch.EventSub.CoreFunctions
                 catch (WebSocketException ex)
                 {
 #pragma warning disable CA2254
-                    _logger.LogDebug("Case of running into cancel while receiving - close sent / close received" + ex.Message);
+                    _logger.LogDebug("[EventSubClient] - [GenericWebsocket] Case of running into cancel while receiving - close sent / close received" + ex.Message);
 #pragma warning restore CA2254
                     await DisconnectAsync();
                 }
@@ -132,7 +132,7 @@ namespace Twitch.EventSub.CoreFunctions
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError("Web socket encountered unexpected error: {ex}", ex);
+                    _logger.LogError("[EventSubClient] - [GenericWebsocket] Web socket encountered unexpected error: {ex}", ex);
                 }
 
                 await Task.Delay(200, cancel);
@@ -221,7 +221,7 @@ namespace Twitch.EventSub.CoreFunctions
             }
             catch (Exception ex)
             {
-                _logger.LogError("Error during sending a message for Web Socket: {Ex}", ex);
+                _logger.LogError("[EventSubClient] - [GenericWebsocket] Error during sending a message for Web Socket: {Ex}", ex);
             }
             finally
             {
@@ -255,7 +255,7 @@ namespace Twitch.EventSub.CoreFunctions
             }
 
             _disconnectInProgress = true;
-            _logger.LogInformation("Disconnecting web socket...");
+            _logger.LogInformation("[EventSubClient] - [GenericWebsocket] Disconnecting web socket...");
             var timeout = new CancellationTokenSource(MaximumWaitTimeBeforeForcingDisconnection);
             try
             {
@@ -264,7 +264,7 @@ namespace Twitch.EventSub.CoreFunctions
 
                 if (_clientWebSocket.State != WebSocketState.Closed)
                 {
-                    _logger.LogWarning("Requested websocket disconnection was not successful. Actual status: {State}",
+                    _logger.LogWarning("[EventSubClient] - [GenericWebsocket] Requested websocket disconnection was not successful. Actual status: {State}",
                         _clientWebSocket.State);
                 }
             }

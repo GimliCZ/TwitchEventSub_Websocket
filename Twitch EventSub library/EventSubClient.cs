@@ -20,17 +20,26 @@ namespace Twitch.EventSub
         private List<CreateSubscriptionRequest> _listOfSubs;
         public event EventHandler<string?> OnUnexpectedConnectionTermination;
         public event AsyncEventHandler<InvalidAccessTokenException> OnRefreshTokenAsync;
-        public EventSubClient(ILogger logger, IOptions<EventSubClientOptions> options)
+        public EventSubClient(ILogger<EventSubClient> logger, EventSubClientOptions options)
         {
+            if (options.CommunicationSpeed > TimeSpan.FromSeconds(10))
+            {
+                _logger.LogWarning("[EventSubClient] Communication MUST be faster or equal 10 s");
+                return;
+            }
             _logger = logger;
 
             _manager = new EventSubscriptionManager(logger, logger);
-            _socket = new EventSubSocketWrapper(logger, logger, logger, options.Value.CommunicationSpeed);
+            _socket = new EventSubSocketWrapper(logger, logger, logger, options.CommunicationSpeed);
             _socket.OnNotificationMessageAsync += SocketOnNotificationAsync;
             _socket.OnRegisterSubscriptionsAsync += SocketOnRegisterSubscriptionsAsyncAsync;
             _socket.OnRevocationMessageAsync += SocketOnRevocationMessageAsyncAsync;
             _socket.OnOutsideDisconnectAsync += SocketOnOutsideDisconnectAsyncAsync;
             _manager.OnRefreshTokenRequestAsync += ManagerOnRefreshTokenRequestAsyncAsync;
+        }
+
+        public EventSubClient(ILogger<EventSubClient> logger) : this(logger, new EventSubClientOptions())
+        {
         }
 
         #region Available events
@@ -131,7 +140,7 @@ namespace Twitch.EventSub
             {
                 return true;
             }
-            _logger.LogInformation("Connection unsuccessful");
+            _logger.LogInformation("[EventSubClient] Connection unsuccessful");
             return false;
         }
         /// <summary>

@@ -52,7 +52,7 @@ namespace Twitch.EventSub.CoreFunctions
             {
                 return result.ToUniversalTime();
             }
-            throw new Exception("Parsed Invalid date");
+            throw new Exception("[EventSubClient] - [ReplayProtection] Parsed Invalid date");
         }
     }
 }

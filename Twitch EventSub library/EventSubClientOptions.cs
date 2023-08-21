@@ -4,7 +4,7 @@
     {
         public TimeSpan CommunicationSpeed { get; }
 
-        public EventSubClientOptions(TimeSpan? communicationSpeed)
+        public EventSubClientOptions(TimeSpan? communicationSpeed = null)
         {
             CommunicationSpeed = communicationSpeed ?? TimeSpan.FromMilliseconds(300);
         }
