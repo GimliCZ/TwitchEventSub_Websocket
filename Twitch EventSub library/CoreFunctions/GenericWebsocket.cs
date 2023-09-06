@@ -79,9 +79,15 @@ namespace Twitch.EventSub.CoreFunctions
             try
             {
                 await _clientWebSocket.ConnectAsync(new Uri(serverAddress), CancellationToken.None);
-                ReceiveTask = ReceiveRoutineAsync(_receiveCancelSource.Token);
-                _sendTimer.Change(TimeSpan.Zero, _speedOfListening);
-                return true;
+                if (_clientWebSocket.State == WebSocketState.Open)
+                {
+                    //if is channel opened, proceed with listening
+                    ReceiveTask = ReceiveRoutineAsync(_receiveCancelSource.Token);
+                    _sendTimer.Change(TimeSpan.Zero, _speedOfListening);
+                    return true;
+                }
+                _logger.LogWarning("Websocket was unable to connect to server.");
+                return false;
             }
             catch (WebSocketException ex)
             {
@@ -159,7 +165,7 @@ namespace Twitch.EventSub.CoreFunctions
                     await OnServerSideTerminationAsync.TryInvoke(this, receiveResult.CloseStatusDescription);
                 }
                 _sendCancelSource?.Cancel();
-                await _clientWebSocket.CloseOutputAsync(
+                await _clientWebSocket.CloseAsync(
                     WebSocketCloseStatus.NormalClosure,
                     "Acknowledge Close frame",
                     CancellationToken.None);
@@ -248,7 +254,7 @@ namespace Twitch.EventSub.CoreFunctions
             _sendTimer?.Change(Timeout.InfiniteTimeSpan, TimeSpan.Zero);
 
             if (_clientWebSocket == null ||
-                _clientWebSocket.State != WebSocketState.Open ||
+                _clientWebSocket?.State != WebSocketState.Open ||
                 _disconnectInProgress)
             {
                 return;
@@ -262,10 +268,10 @@ namespace Twitch.EventSub.CoreFunctions
                 await _clientWebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", timeout.Token);
 
 
-                if (_clientWebSocket.State != WebSocketState.Closed)
+                if (_clientWebSocket?.State != WebSocketState.Closed)
                 {
                     _logger.LogWarning("[EventSubClient] - [GenericWebsocket] Requested websocket disconnection was not successful. Actual status: {State}",
-                        _clientWebSocket.State);
+                        _clientWebSocket?.State);
                 }
             }
             catch (OperationCanceledException)
