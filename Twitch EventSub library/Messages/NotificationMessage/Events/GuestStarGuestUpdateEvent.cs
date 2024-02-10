@@ -30,5 +30,15 @@ namespace Twitch.EventSub.Messages.NotificationMessage.Events
 
         [JsonProperty("state")]
         public string State { get; set; }
+
+        [JsonProperty("host_video_enabled")]
+        public bool IsHostVideoEnabled { get; set; }
+
+        [JsonProperty("host_audio_enabled")]
+        public bool IsHostAudioEnabled { get; set; }
+
+        [JsonProperty("host_volume")]
+
+        public int HostVolume { get; set; }
     }
 }

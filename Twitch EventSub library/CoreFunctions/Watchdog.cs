@@ -92,7 +92,7 @@ namespace Twitch.EventSub.CoreFunctions
             catch (Exception ex)
             {
                 //catch any exceptions, we dont want crash
-                _logger.LogWarning("Watchdog detected exception: {ex}",ex);
+                _logger.LogWarning("Watchdog detected exception: {ex}", ex);
             }
         }
     }

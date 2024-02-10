@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Twitch.EventSub.API.Extensions;
 using Twitch.EventSub.API.Models;
 using Twitch.EventSub.CoreFunctions;

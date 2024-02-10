@@ -48,5 +48,8 @@ namespace Twitch.EventSub.Messages.NotificationMessage.Events
 
         [JsonProperty("emotes")]
         public List<Emote> Emotes { get; set; }
+
+        [JsonProperty("fragments")]
+        public List<Fragment> Fragments { get; set; }
     }
 }

@@ -198,6 +198,29 @@ namespace Twitch.EventSub
                     resultMessage.Event = payload["event"]?.ToObject<FollowEvent>();
                     break;
 
+                case "channel.chat.clear":
+                    resultMessage.Event = payload["event"]?.ToObject<ChannelChatClearEvent>();
+                    break;
+                case "channel.chat.clear_user_messages":
+                    resultMessage.Event = payload["event"]?.ToObject<ChannelUserChatClearEvent>();
+                    break;
+
+                case "channel.chat.message":
+                    resultMessage.Event = payload["event"]?.ToObject<ChannelChatMessage>();
+                    break;
+
+                case "channel.chat.message_delete":
+                    resultMessage.Event = payload["event"]?.ToObject<ChannelChatMessageDeleteEvent>();
+                    break;
+
+                case "channel.chat.notification":
+                    resultMessage.Event = payload["event"]?.ToObject<ChannelChatNotificationEvent>();
+                    break;
+
+                case "channel.chat_settings.update":
+                    resultMessage.Event = payload["event"]?.ToObject<ChannelChatSettingsUpdateEvent>();
+                    break;
+
                 case "channel.subscribe":
                     resultMessage.Event = payload["event"]?.ToObject<SubscribeEvent>();
                     break;

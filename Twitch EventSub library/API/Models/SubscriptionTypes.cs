@@ -5,6 +5,12 @@
         // Channel Subscriptions
         ChannelUpdate,
         ChannelFollow,
+        ChannelAdBreakBegin,
+        ChannelChatClear,
+        ChannelChatClearUserMessages,
+        ChannelChatMessage,
+        ChannelChatMessageDelete,
+        ChannelChatNotification,
         ChannelSubscribe,
         ChannelSubscriptionEnd,
         ChannelSubscriptionGift,
@@ -17,6 +23,7 @@
         ChannelModeratorRemove,
 
         // Beta Channel Guest Star
+        BetaChannelChatSettingsUpdate,
         BetaChannelGuestStarSessionBegin,
         BetaChannelGuestStarSessionEnd,
         BetaChannelGuestStarGuestUpdate,
