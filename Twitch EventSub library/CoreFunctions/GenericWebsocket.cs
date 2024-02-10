@@ -270,8 +270,11 @@ namespace Twitch.EventSub.CoreFunctions
 
                 if (_clientWebSocket?.State != WebSocketState.Closed)
                 {
-                    _logger.LogWarning("[EventSubClient] - [GenericWebsocket] Requested websocket disconnection was not successful. Actual status: {State}",
-                        _clientWebSocket?.State);
+                    if (_clientWebSocket != null)
+                    {
+                        _logger.LogWarning("[EventSubClient] - [GenericWebsocket] Requested websocket disconnection was not successful. Actual status: {State}",
+                            _clientWebSocket?.State);
+                    }
                 }
             }
             catch (OperationCanceledException)

@@ -27,6 +27,27 @@ namespace Twitch.EventSub.API.Extensions
             { SubscriptionType.ChannelSubscribe, ("channel.subscribe", "1",
                 CondList(ConditionType.BroadcasterUserId))},
 
+            {SubscriptionType.ChannelAdBreakBegin, ("channel.ad_break.begin","1",
+                CondList(ConditionType.BroadcasterUserId))},
+
+            { SubscriptionType.ChannelChatClear, ("channel.chat.clear", "1",
+                    CondList(ConditionType.BroadcasterUserId)) },
+
+            { SubscriptionType.ChannelChatClearUserMessages, ("channel.chat.clear_user_messages", "1",
+                    CondList(ConditionType.BroadcasterUserId)) },
+
+            { SubscriptionType.ChannelChatMessage, ("channel.chat.message", "1",
+                    CondList(ConditionType.BroadcasterUserId)) },
+
+            { SubscriptionType.ChannelChatMessageDelete, ("channel.chat.message_delete", "1",
+                    CondList(ConditionType.BroadcasterUserId)) },
+
+            { SubscriptionType.ChannelChatNotification, ("channel.chat.notification", "1",
+                    CondList(ConditionType.BroadcasterUserId)) },
+
+            { SubscriptionType.BetaChannelChatSettingsUpdate, ("channel.chat_settings.update", "beta",
+                    CondList(ConditionType.BroadcasterUserId)) },
+
             { SubscriptionType.ChannelSubscriptionEnd, ("channel.subscription.end", "1",
                 CondList(ConditionType.BroadcasterUserId)) },
 
@@ -137,7 +158,6 @@ namespace Twitch.EventSub.API.Extensions
 
             { SubscriptionType.ChannelShoutoutReceived, ("channel.shoutout.receive", "1",
                 CondList(ConditionType.BroadcasterUserId,ConditionType.ModeratorUserId)) },
-
             //this is webhook only feature
             /*{ SubscriptionType.DropEntitlementGrant, ("drop.entitlement.grant", "1",
                 CondList(ConditionType.OrganizationId,ConditionType.CategoryId,
