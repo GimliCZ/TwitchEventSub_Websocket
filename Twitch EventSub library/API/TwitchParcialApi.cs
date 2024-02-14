@@ -44,7 +44,7 @@ namespace Twitch.EventSub.API
                         HttpStatusCode.Forbidden => throw new Exception("Invalid Scopes"),
                         _ => LogDiscrepancy<bool>("There was an error during communication SubscribeAsync returned: " +
                                             response.ReasonPhrase +
-                                            " ," + response.StatusCode)
+                                            " ," + response.StatusCode, response)
                     };
                 }
                 catch (HttpRequestException ex)
@@ -78,7 +78,7 @@ namespace Twitch.EventSub.API
                         HttpStatusCode.Unauthorized => throw new InvalidAccessTokenException("Unsubscribe failed due" + await response.Content.ReadAsStringAsync(clSource.Token) + response.ReasonPhrase),
                         _ => LogDiscrepancy<bool>("There was an error during communication UnSubscribeAsync returned: " +
                                             response.ReasonPhrase +
-                                            " ," + response.StatusCode)
+                                            " ," + response.StatusCode, response)
                     };
                 }
                 catch (HttpRequestException ex)
@@ -125,7 +125,8 @@ namespace Twitch.EventSub.API
                         _ => LogDiscrepancy<GetSubscriptionsResponse?>(
                             ("There was an error during communication GetSubscriptionsAsync returned: " +
                                     response.ReasonPhrase +
-                                    " ," + response.StatusCode))
+                                    " ," + response.StatusCode + 
+                                    ", " + await response.Content.ReadAsStringAsync(clSource.Token)), response)
                     };
                 }
                 catch (HttpRequestException ex)
@@ -186,9 +187,9 @@ namespace Twitch.EventSub.API
         /// <typeparam name="T"></typeparam>
         /// <param name="report"></param>
         /// <returns>if bool then false if string NULL etc</returns>
-        private T? LogDiscrepancy<T>(string report)
+        private T? LogDiscrepancy<T>(string report,params object?[] args)
         {
-            _logger.LogWarning(report);
+            _logger.LogWarning(report,args);
             return default;
         }
 
