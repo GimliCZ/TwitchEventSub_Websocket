@@ -44,7 +44,7 @@ namespace Twitch.EventSub.API
                         HttpStatusCode.Forbidden => throw new Exception("Invalid Scopes"),
                         _ => LogDiscrepancy<bool>("There was an error during communication SubscribeAsync returned: " +
                                             response.ReasonPhrase +
-                                            " ," + response.StatusCode, response)
+                                            " ," + response.StatusCode)
                     };
                 }
                 catch (HttpRequestException ex)
@@ -78,7 +78,7 @@ namespace Twitch.EventSub.API
                         HttpStatusCode.Unauthorized => throw new InvalidAccessTokenException("Unsubscribe failed due" + await response.Content.ReadAsStringAsync(clSource.Token) + response.ReasonPhrase),
                         _ => LogDiscrepancy<bool>("There was an error during communication UnSubscribeAsync returned: " +
                                             response.ReasonPhrase +
-                                            " ," + response.StatusCode, response)
+                                            " ," + response.StatusCode)
                     };
                 }
                 catch (HttpRequestException ex)
@@ -117,17 +117,24 @@ namespace Twitch.EventSub.API
                         queryBuilder.Append($"&after={WebUtility.UrlEncode(after)}");
 
                     var response = await httpClient.GetAsync(queryBuilder.ToString(), clSource.Token);
+                    var body = await response.Content.ReadAsStringAsync(clSource.Token);
+                    if (string.IsNullOrEmpty(body))
+                    {
+                        body = string.Empty;
+                    }
                     return response.StatusCode switch
                     {
-                        HttpStatusCode.OK => JsonConvert.DeserializeObject<GetSubscriptionsResponse>(await response.Content.ReadAsStringAsync(clSource.Token)),
+                        
+
+                        HttpStatusCode.OK => JsonConvert.DeserializeObject<GetSubscriptionsResponse>(body),
                         HttpStatusCode.Unauthorized => throw new InvalidAccessTokenException(
-                            "GetSubscriptions failed due" + await response.Content.ReadAsStringAsync(clSource.Token) + response.ReasonPhrase),
+                            "GetSubscriptions failed due" + body + response.ReasonPhrase),
                         _ => LogDiscrepancy<GetSubscriptionsResponse?>(
                             ("There was an error during communication GetSubscriptionsAsync returned: " +
                                     response.ReasonPhrase +
-                                    " ," + response.StatusCode + 
-                                    ", " + await response.Content.ReadAsStringAsync(clSource.Token)), response)
-                    };
+                                    " ," + response.StatusCode +
+                                    ", " + body))
+                    } ;
                 }
                 catch (HttpRequestException ex)
                 {
@@ -187,9 +194,9 @@ namespace Twitch.EventSub.API
         /// <typeparam name="T"></typeparam>
         /// <param name="report"></param>
         /// <returns>if bool then false if string NULL etc</returns>
-        private T? LogDiscrepancy<T>(string report,params object?[] args)
+        private T? LogDiscrepancy<T>(string report)
         {
-            _logger.LogWarning(report,args);
+            _logger.LogWarning(report);
             return default;
         }
 
