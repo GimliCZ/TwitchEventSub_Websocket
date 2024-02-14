@@ -53,7 +53,7 @@ namespace Twitch.EventSub
 
         private async Task OnServerSideTerminationAsync(object sender, string e)
         {
-            _logger.LogInformation(e);
+            _logger.LogInformation(e,sender);
             _connectionActive = false;
             await OnOutsideDisconnectAsync.TryInvoke(this, e);
         }
@@ -129,7 +129,6 @@ namespace Twitch.EventSub
         private static WebSocketMessage DeserializeMessage(string message)
         {
             JObject jsonObject = JObject.Parse(message);
-
             if (!jsonObject.TryGetValue("metadata", out JToken? metadataToken) || !(metadataToken is JObject))
             {
                 throw new JsonSerializationException("metadata is missing in the JSON object");
@@ -412,6 +411,7 @@ namespace Twitch.EventSub
 
         private async Task NotificationMessageProcessingAsync(WebSocketNotificationMessage message)
         {
+            _watchdog.Reset();
             if (message.Payload != null)
                 await OnNotificationMessageAsync.TryInvoke(this, message.Payload);
         }
@@ -428,7 +428,7 @@ namespace Twitch.EventSub
                 _connectionActive = await _socket.ConnectAsync(message.Payload.Session.ReconnectUrl);
                 if (!_connectionActive)
                 {
-                    _logger.LogInformation("[EventSubClient] - [EventSubSocketWrapper] connection lost during reconnect");
+                    _logger.LogInformation("[EventSubClient] - [EventSubSocketWrapper] connection lost during reconnect", _socket);
                     return;
                 }
             }
