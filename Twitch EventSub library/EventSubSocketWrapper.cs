@@ -38,16 +38,14 @@ namespace Twitch.EventSub
         public event AsyncEventHandler<string?> OnOutsideDisconnectAsync;
 
         public EventSubSocketWrapper(ILogger logger,
-            ILogger socketLogger,
-            ILogger watchdogLogger,
             TimeSpan processingSpeed)
         {
-            _socket = new GenericWebsocket(socketLogger, processingSpeed);
+            _socket = new GenericWebsocket(logger, processingSpeed);
             _logger = logger;
             _socket.OnMessageReceivedAsync += SocketOnMessageReceivedAsync;
             _socket.OnServerSideTerminationAsync += OnServerSideTerminationAsync;
             _replayProtection = new ReplayProtection(10);
-            _watchdog = new Watchdog(watchdogLogger);
+            _watchdog = new Watchdog(logger);
             _watchdog.OnWatchdogTimeout += OnWatchdogTimeoutAsync;
         }
 
