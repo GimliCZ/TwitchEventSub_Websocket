@@ -26,9 +26,9 @@ namespace Twitch.EventSub
 
         public event AsyncEventHandler<InvalidAccessTokenException> OnRefreshTokenRequestAsync;
 
-        public EventSubscriptionManager(ILogger logger, ILogger ApiLogger)
+        public EventSubscriptionManager(ILogger logger)
         {
-            _api = new TwitchParcialApi(ApiLogger);
+            _api = new TwitchParcialApi(logger);
             _logger = logger;
         }
 

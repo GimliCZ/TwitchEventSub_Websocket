@@ -21,15 +21,14 @@ namespace Twitch.EventSub
         public event AsyncEventHandler<InvalidAccessTokenException> OnRefreshTokenAsync;
         public EventSubClient(ILogger<EventSubClient> logger, EventSubClientOptions options)
         {
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             if (options.CommunicationSpeed > TimeSpan.FromSeconds(10))
             {
                 _logger.LogWarning("[EventSubClient] Communication MUST be faster or equal 10 s");
                 return;
             }
-            _logger = logger;
-
-            _manager = new EventSubscriptionManager(logger, logger);
-            _socket = new EventSubSocketWrapper(logger, logger, logger, options.CommunicationSpeed);
+            _manager = new EventSubscriptionManager(logger);
+            _socket = new EventSubSocketWrapper(logger, options.CommunicationSpeed);
             _socket.OnNotificationMessageAsync += SocketOnNotificationAsync;
             _socket.OnRegisterSubscriptionsAsync += SocketOnRegisterSubscriptionsAsyncAsync;
             _socket.OnRevocationMessageAsync += SocketOnRevocationMessageAsyncAsync;

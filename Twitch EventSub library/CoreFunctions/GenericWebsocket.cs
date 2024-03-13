@@ -39,6 +39,7 @@ namespace Twitch.EventSub.CoreFunctions
         {
             try
             {
+
                 if (OnMessageReceivedAsync is not null)
                 {
                     await OnMessageReceivedAsync(this, e);
@@ -147,7 +148,11 @@ namespace Twitch.EventSub.CoreFunctions
 
         private async Task ReceiveDataInternalAsync(CancellationToken cancel)
         {
-            var receiveResult = await _clientWebSocket?.ReceiveAsync(_readBuffer, cancel)!;
+            if (_clientWebSocket == null)
+            {
+                return;
+            }
+            var receiveResult = await (_clientWebSocket.ReceiveAsync(_readBuffer, cancel));
 
             // If the token is canceled while ReceiveAsync is blocking, the socket state changes to aborted and it can't be used
             if (cancel.IsCancellationRequested)
@@ -156,7 +161,7 @@ namespace Twitch.EventSub.CoreFunctions
             }
 
             // Termination received from server
-            if (_clientWebSocket.State == WebSocketState.CloseReceived &&
+            if (_clientWebSocket?.State == WebSocketState.CloseReceived &&
                 receiveResult.MessageType == WebSocketMessageType.Close)
             {
 
@@ -165,14 +170,14 @@ namespace Twitch.EventSub.CoreFunctions
                     await OnServerSideTerminationAsync.TryInvoke(this, receiveResult.CloseStatusDescription);
                 }
                 _sendCancelSource?.Cancel();
-                await _clientWebSocket.CloseAsync(
+                await (_clientWebSocket?.CloseAsync(
                     WebSocketCloseStatus.NormalClosure,
                     "Acknowledge Close frame",
-                    CancellationToken.None);
+                    CancellationToken.None) ?? Task.CompletedTask);
             }
 
             // Received some data
-            if (_clientWebSocket.State == WebSocketState.Open &&
+            if (_clientWebSocket?.State == WebSocketState.Open &&
                 receiveResult.MessageType != WebSocketMessageType.Close)
             {
                 if (_readMemoryStream != null)
@@ -215,11 +220,11 @@ namespace Twitch.EventSub.CoreFunctions
             {
                 if (!cancel.IsCancellationRequested && _messagesToSend.TryDequeue(out var message))
                 {
-                    await _clientWebSocket?.SendAsync(
+                    await (_clientWebSocket?.SendAsync(
                         Encoding.UTF8.GetBytes(message),
                         WebSocketMessageType.Text,
                         true,
-                        CancellationToken.None)!;
+                        CancellationToken.None) ?? Task.CompletedTask);
                 }
             }
             catch (OperationCanceledException)
