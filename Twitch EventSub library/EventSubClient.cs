@@ -44,6 +44,7 @@ namespace Twitch.EventSub
 
         public event AsyncEventHandler<UpdateNotificationEvent> OnUpdateNotificationEventAsync;
         public event AsyncEventHandler<FollowEvent> OnFollowEventAsync;
+        public event AsyncEventHandler<ChannelChatMessage> OnChannelChatEventAsync;
         public event AsyncEventHandler<SubscribeEvent> OnSubscribeEventAsync;
         public event AsyncEventHandler<SubscribeEndEvent> OnSubscribeEndEventAsync;
         public event AsyncEventHandler<SubscriptionGiftEvent> OnSubscriptionGiftEventAsync;
@@ -222,6 +223,10 @@ namespace Twitch.EventSub
 
                 case SubscribeEvent subscribeEvent:
                     await OnSubscribeEventAsync.TryInvoke(sender, subscribeEvent);
+                    break;
+
+                case ChannelChatMessage channelChatMessage:
+                    await OnChannelChatEventAsync.TryInvoke(sender, channelChatMessage);
                     break;
 
                 case SubscriptionGiftEvent subscriptionGiftEvent:
