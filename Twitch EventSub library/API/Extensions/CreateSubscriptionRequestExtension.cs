@@ -20,6 +20,8 @@ namespace Twitch.EventSub.API.Extensions
 
                 )
             },
+            { SubscriptionType.ChannelChatMessage,("channel.chat.message", "1",
+               CondList(ConditionType.BroadcasterUserId, ConditionType.UserId)) },
 
             { SubscriptionType.ChannelFollow, ("channel.follow", "2",
                 CondList(ConditionType.BroadcasterUserId,ConditionType.ModeratorUserId)) },
