@@ -38,9 +38,6 @@ namespace Twitch.EventSub.API.Extensions
             { SubscriptionType.ChannelChatClearUserMessages, ("channel.chat.clear_user_messages", "1",
                     CondList(ConditionType.BroadcasterUserId)) },
 
-            { SubscriptionType.ChannelChatMessage, ("channel.chat.message", "1",
-                    CondList(ConditionType.BroadcasterUserId)) },
-
             { SubscriptionType.ChannelChatMessageDelete, ("channel.chat.message_delete", "1",
                     CondList(ConditionType.BroadcasterUserId)) },
 
