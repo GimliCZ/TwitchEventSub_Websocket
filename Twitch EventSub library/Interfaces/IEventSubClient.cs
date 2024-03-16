@@ -15,6 +15,8 @@ namespace Twitch.EventSub.Interfaces
 
         event AsyncEventHandler<FollowEvent> OnFollowEventAsync;
 
+        event AsyncEventHandler<ChannelChatMessage> OnChannelChatEventAsync;
+
         event AsyncEventHandler<SubscribeEvent> OnSubscribeEventAsync;
 
         event AsyncEventHandler<SubscribeEndEvent> OnSubscribeEndEventAsync;
