@@ -19,6 +19,7 @@ namespace Twitch.EventSub
         private List<CreateSubscriptionRequest> _listOfSubs;
         public event EventHandler<string?> OnUnexpectedConnectionTermination;
         public event AsyncEventHandler<InvalidAccessTokenException> OnRefreshTokenAsync;
+        public event AsyncEventHandler<string?> OnRawMessageAsync;
         public EventSubClient(ILogger<EventSubClient> logger, EventSubClientOptions options)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -29,11 +30,17 @@ namespace Twitch.EventSub
             }
             _manager = new EventSubscriptionManager(logger);
             _socket = new EventSubSocketWrapper(logger, options.CommunicationSpeed);
+            _socket.OnRawMessageRecievedAsync += SocketOnRawMessageRecievedAsync;
             _socket.OnNotificationMessageAsync += SocketOnNotificationAsync;
             _socket.OnRegisterSubscriptionsAsync += SocketOnRegisterSubscriptionsAsyncAsync;
             _socket.OnRevocationMessageAsync += SocketOnRevocationMessageAsyncAsync;
             _socket.OnOutsideDisconnectAsync += SocketOnOutsideDisconnectAsyncAsync;
             _manager.OnRefreshTokenRequestAsync += ManagerOnRefreshTokenRequestAsyncAsync;
+        }
+
+        private async Task SocketOnRawMessageRecievedAsync(object sender, string? e)
+        {
+           await OnRawMessageAsync.TryInvoke(sender, e);
         }
 
         public EventSubClient(ILogger<EventSubClient> logger) : this(logger, new EventSubClientOptions())

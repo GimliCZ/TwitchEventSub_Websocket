@@ -139,7 +139,7 @@ namespace Twitch.EventSub.CoreFunctions
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError("[EventSubClient] - [GenericWebsocket] Web socket encountered unexpected error: {ex}", ex);
+                    _logger.LogErrorDetails("[EventSubClient] - [GenericWebsocket] Web socket encountered unexpected error", ex);
                 }
 
                 await Task.Delay(200, cancel);
@@ -232,7 +232,7 @@ namespace Twitch.EventSub.CoreFunctions
             }
             catch (Exception ex)
             {
-                _logger.LogError("[EventSubClient] - [GenericWebsocket] Error during sending a message for Web Socket: {Ex}", ex);
+                _logger.LogErrorDetails("[EventSubClient] - [GenericWebsocket] Error during sending a message for Web Socket", ex);
             }
             finally
             {

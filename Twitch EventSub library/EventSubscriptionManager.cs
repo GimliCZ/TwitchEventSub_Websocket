@@ -138,7 +138,7 @@ namespace Twitch.EventSub
                 {
                     _logger.LogInformation("[EventSubClient] - [EventSubscriptionManager] Failed to subscribe subscription during revocation");
                 }
-                _logger.LogInformation("[EventSubClient] - [EventSubscriptionManager] Refreshed sub due revocation: " + sub.Type + "caused by " + e?.Payload?.Status);
+                _logger.LogInformationDetails("[EventSubClient] - [EventSubscriptionManager] Refreshed sub due revocation: " + sub.Type + "caused by ", e);
             }
 
         }
@@ -360,7 +360,7 @@ namespace Twitch.EventSub
             }
             catch (Exception ex)
             {
-                _logger.LogError("[EventSubClient] - [EventSubscriptionManager] Api call failed due to: {ex}", ex);
+                _logger.LogInformationDetails("[EventSubClient] - [EventSubscriptionManager] Api call failed due to:", ex);
             }
             //This is expected behavior. If we get null or false, we handle it in higher part of function
             return default;

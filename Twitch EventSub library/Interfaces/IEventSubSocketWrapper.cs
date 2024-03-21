@@ -13,6 +13,8 @@ namespace Twitch.EventSub.Interfaces
         event AsyncEventHandler<WebSocketRevocationMessage> OnRevocationMessageAsync;
 
         event AsyncEventHandler<string?> OnOutsideDisconnectAsync;
+
+        event AsyncEventHandler<string?> OnRawMessageRecievedAsync;
         Task<bool> ConnectAsync(string connectUrl);
         Task DisconnectAsync();
     }
