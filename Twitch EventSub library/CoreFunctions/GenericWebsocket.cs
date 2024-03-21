@@ -47,7 +47,7 @@ namespace Twitch.EventSub.CoreFunctions
             }
             catch (Exception ex)
             {
-                _logger.LogError("[EventSubClient] - [GenericWebsocket] Fail to invoke message received: {ex}", ex);
+                _logger.LogErrorDetails("[EventSubClient] - [GenericWebsocket] Fail to invoke message received", ex);
             }
         }
 
@@ -93,13 +93,13 @@ namespace Twitch.EventSub.CoreFunctions
             catch (WebSocketException ex)
             {
 #pragma warning disable CA2254
-                _logger.LogDebug("[EventSubClient] - [GenericWebsocket] Case of incomplete disconnect - close sent / close received, proceed" + ex.Message);
+                _logger.LogErrorDetails("[EventSubClient] - [GenericWebsocket] Case of incomplete disconnect - close sent / close received, proceed",ex);
 #pragma warning restore CA2254
             }
             catch (OperationCanceledException ex)
             {
 #pragma warning disable CA2254
-                _logger.LogDebug("[EventSubClient] - [GenericWebsocket] Process canceled, proceed" + ex.Message);
+                _logger.LogErrorDetails("[EventSubClient] - [GenericWebsocket] Process canceled, proceed",ex);
 #pragma warning restore CA2254
             }
 
@@ -129,7 +129,7 @@ namespace Twitch.EventSub.CoreFunctions
                 catch (WebSocketException ex)
                 {
 #pragma warning disable CA2254
-                    _logger.LogDebug("[EventSubClient] - [GenericWebsocket] Case of running into cancel while receiving - close sent / close received" + ex.Message);
+                    _logger.LogDebugDetails("[EventSubClient] - [GenericWebsocket] Case of running into cancel while receiving - close sent / close received", ex);
 #pragma warning restore CA2254
                     await DisconnectAsync();
                 }
