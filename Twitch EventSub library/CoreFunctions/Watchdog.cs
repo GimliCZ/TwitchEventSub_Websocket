@@ -82,7 +82,6 @@ namespace Twitch.EventSub.CoreFunctions
         {
             _timer.Change(Timeout.Infinite, Timeout.Infinite);
             _isRunning = false;
-            _logger.LogInformation("[EventSubClient] - [Watchdog] Watchdog timeout! Something went wrong.");
 
             // Raise the WatchdogTimeout event
             try
@@ -92,7 +91,7 @@ namespace Twitch.EventSub.CoreFunctions
             catch (Exception ex)
             {
                 //catch any exceptions, we dont want crash
-                _logger.LogWarning("Watchdog detected exception: {ex}", ex);
+                _logger.LogWarningDetails("Watchdog detected exception", ex);
             }
         }
     }

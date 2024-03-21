@@ -7,6 +7,8 @@ namespace Twitch.EventSub.Interfaces
 {
     public interface IEventSubClient
     {
+        event AsyncEventHandler<string?> OnRawMessageAsync;
+
         event EventHandler<string?> OnUnexpectedConnectionTermination;
 
         event AsyncEventHandler<InvalidAccessTokenException> OnRefreshTokenAsync;

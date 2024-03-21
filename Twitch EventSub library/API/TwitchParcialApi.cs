@@ -4,6 +4,7 @@ using System.Text;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Twitch.EventSub.API.Models;
+using Twitch.EventSub.CoreFunctions;
 
 namespace Twitch.EventSub.API
 {
@@ -37,19 +38,22 @@ namespace Twitch.EventSub.API
                     var content = new StringContent(requestBody, Encoding.UTF8, "application/json");
 
                     var response = await httpClient.PostAsync(_baseUrl, content, clSource.Token);
-                    return response.StatusCode switch
+                    switch (response.StatusCode)
                     {
-                        HttpStatusCode.Accepted => true,
-                        HttpStatusCode.Unauthorized => throw new InvalidAccessTokenException("Subscribe failed due" + await response.Content.ReadAsStreamAsync(clSource.Token) + response.ReasonPhrase),
-                        HttpStatusCode.Forbidden => throw new Exception("Invalid Scopes"),
-                        _ => LogDiscrepancy<bool>("There was an error during communication SubscribeAsync returned: " +
-                                            response.ReasonPhrase +
-                                            " ," + response.StatusCode)
-                    };
+                        case HttpStatusCode.Accepted:
+                            return true;
+                        case HttpStatusCode.Unauthorized:
+                            throw new InvalidAccessTokenException("Subscribe failed due" + await response.Content.ReadAsStreamAsync(clSource.Token) + response.ReasonPhrase);
+                        case HttpStatusCode.Forbidden:
+                            throw new Exception("Subscribe - Invalid Scopes");
+                        default:
+                            _logger.LogWarningDetails("[EventSubClient] - [TwitchPartialApi] - Subscribe got non-standard status code",requestBody, content, response);
+                            return false;
+                    }
                 }
                 catch (HttpRequestException ex)
                 {
-                    _logger.LogInformation($"[EventSubClient] - [TwitchPartialApi] Error: {ex.Message}");
+                    _logger.LogErrorDetails($"[EventSubClient] - [TwitchPartialApi] - SubscribeAsync returned exception",ex, request);
                     return false;
                 }
             }
@@ -72,18 +76,20 @@ namespace Twitch.EventSub.API
                 {
                     var url = $"{_baseUrl}?id={subscriptionId}";
                     var response = await httpClient.DeleteAsync(url, clSource.Token);
-                    return response.StatusCode switch
+
+                    switch (response.StatusCode)
                     {
-                        HttpStatusCode.NoContent => true,
-                        HttpStatusCode.Unauthorized => throw new InvalidAccessTokenException("Unsubscribe failed due" + await response.Content.ReadAsStringAsync(clSource.Token) + response.ReasonPhrase),
-                        _ => LogDiscrepancy<bool>("There was an error during communication UnSubscribeAsync returned: " +
-                                            response.ReasonPhrase +
-                                            " ," + response.StatusCode)
+                        case HttpStatusCode.NoContent: return true;
+                        case HttpStatusCode.Unauthorized:
+                            throw new InvalidAccessTokenException("Unsubscribe failed due" + await response.Content.ReadAsStringAsync(clSource.Token) + response.ReasonPhrase);
+                        default:
+                            _logger.LogWarningDetails("[EventSubClient] - [TwitchPartialApi] - UnSubscribeAsync got non-standard status code:", response);
+                            return false;
                     };
                 }
                 catch (HttpRequestException ex)
                 {
-                    _logger.LogInformation($"[EventSubClient] - [TwitchPartialApi] Error: {ex.Message}");
+                    _logger.LogErrorDetails($"[EventSubClient] - [TwitchPartialApi] - UnsubscribeAsync returned exception", ex);
                     return false;
                 }
             }
@@ -122,23 +128,19 @@ namespace Twitch.EventSub.API
                     {
                         body = string.Empty;
                     }
-                    return response.StatusCode switch
-                    {
-                        
 
-                        HttpStatusCode.OK => JsonConvert.DeserializeObject<GetSubscriptionsResponse>(body),
-                        HttpStatusCode.Unauthorized => throw new InvalidAccessTokenException(
-                            "GetSubscriptions failed due" + body + response.ReasonPhrase),
-                        _ => LogDiscrepancy<GetSubscriptionsResponse?>(
-                            ("There was an error during communication GetSubscriptionsAsync returned: " +
-                                    response.ReasonPhrase +
-                                    " ," + response.StatusCode +
-                                    ", " + body))
-                    } ;
+                    switch (response.StatusCode)
+                    {
+                        case HttpStatusCode.OK: return JsonConvert.DeserializeObject<GetSubscriptionsResponse>(body);
+                        case HttpStatusCode.Unauthorized: throw new InvalidAccessTokenException("GetSubscriptions failed due" + body + response.ReasonPhrase);
+                        default: 
+                            _logger.LogWarningDetails("[EventSubClient] - [TwitchPartialApi] - GetSubscriptions got non-standard status code", queryBuilder, response);
+                            return default;
+                    }
                 }
                 catch (HttpRequestException ex)
                 {
-                    _logger.LogInformation($"[EventSubClient] - [TwitchPartialApi] Error: {ex.Message}");
+                    _logger.LogErrorDetails($"[EventSubClient] - [TwitchPartialApi] - GetSubscriptions returned exception", ex, status);
                     return default;
                 }
             }

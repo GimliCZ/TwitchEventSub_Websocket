@@ -32,6 +32,7 @@ namespace Twitch.EventSub
         private int _keepAlive;
         private bool _connectionActive;
 
+        public event AsyncEventHandler<string?> OnRawMessageRecievedAsync;
         public event AsyncEventHandler<string?> OnRegisterSubscriptionsAsync;
         public event AsyncEventHandler<WebSocketNotificationPayload> OnNotificationMessageAsync;
         public event AsyncEventHandler<WebSocketRevocationMessage> OnRevocationMessageAsync;
@@ -77,9 +78,10 @@ namespace Twitch.EventSub
             _connectionActive = false;
         }
 
-        private Task SocketOnMessageReceivedAsync(object sender, string e)
+        private async Task SocketOnMessageReceivedAsync(object sender, string e)
         {
-            return ParseWebSocketMessageAsync(e);
+            await OnRawMessageRecievedAsync.TryInvoke(sender, e);
+            await ParseWebSocketMessageAsync(e);
         }
 
         private Task ParseWebSocketMessageAsync(string e)
@@ -94,7 +96,7 @@ namespace Twitch.EventSub
                 catch (JsonException ex)
                 {
                     // Log the parsing error and return immediately
-                    _logger.LogError("[EventSubClient] - [EventSubSocketWrapper] Error while parsing WebSocket message: " + ex.Message, ex);
+                    _logger.LogErrorDetails("[EventSubClient] - [EventSubSocketWrapper] Error while parsing WebSocket message: ",e,ex);
                     return Task.CompletedTask;
                 }
 
@@ -119,7 +121,7 @@ namespace Twitch.EventSub
             catch (Exception ex)
             {
                 // Catch any other unexpected exceptions and log them
-                _logger.LogError("[EventSubClient] - [EventSubSocketWrapper] Unexpected error while processing WebSocket message: " + ex.Message, ex);
+                _logger.LogErrorDetails("[EventSubClient] - [EventSubSocketWrapper] Unexpected error while processing WebSocket message: ", ex);
                 return Task.CompletedTask;
             }
         }
@@ -405,6 +407,7 @@ namespace Twitch.EventSub
                 _keepAlive = (message.Payload.Session.KeepAliveTimeoutSeconds.Value * 1000 + 100);
             }
             _watchdog.Start(_keepAlive);
+            _logger.LogDebugDetails("[EventSubClient] - [EventSubSocketWrapper] Welcome message detected", message, DateTime.Now);
         }
 
         private async Task NotificationMessageProcessingAsync(WebSocketNotificationMessage message)
@@ -412,6 +415,7 @@ namespace Twitch.EventSub
             _watchdog.Reset();
             if (message.Payload != null)
                 await OnNotificationMessageAsync.TryInvoke(this, message.Payload);
+            _logger.LogDebugDetails("[EventSubClient] - [EventSubSocketWrapper] Notification message detected", message, DateTime.Now);
         }
 
         private async Task ReconnectMessageProcessingAsync(WebSocketReconnectMessage message)
@@ -426,7 +430,7 @@ namespace Twitch.EventSub
                 _connectionActive = await _socket.ConnectAsync(message.Payload.Session.ReconnectUrl);
                 if (!_connectionActive)
                 {
-                    _logger.LogInformation("[EventSubClient] - [EventSubSocketWrapper] connection lost during reconnect", _socket);
+                    _logger.LogInformationDetails("[EventSubClient] - [EventSubSocketWrapper] connection lost during reconnect",message, _socket);
                     return;
                 }
             }
@@ -444,6 +448,7 @@ namespace Twitch.EventSub
             {
                 await OnRevocationMessageAsync.TryInvoke(this, message);
             }
+            _logger.LogDebugDetails("[EventSubClient] - [EventSubSocketWrapper] Revocation message detected", message);
         }
 
         private Task PingMessageProcessingAsync()
@@ -459,13 +464,14 @@ namespace Twitch.EventSub
         private Task KeepAliveMessageProcessing()
         {
             _watchdog.Reset();
+            _logger.LogDebugDetails("[EventSubClient] - [EventSubSocketWrapper] KeepAlive message detected", DateTime.Now);
             return Task.CompletedTask;
         }
 
         private async Task OnWatchdogTimeoutAsync(object sender, string e)
         {
             await _socket.DisconnectAsync();
-            _logger.LogInformation("[EventSubClient] - [EventSubSocketWrapper] Server didn't respond in time");
+            _logger.LogWarningDetails("[EventSubClient] - [EventSubSocketWrapper] Server didn't respond in time",sender, e, DateTime.Now);
             if (OnOutsideDisconnectAsync != null)
             {
                 await OnOutsideDisconnectAsync.TryInvoke(this, e);
