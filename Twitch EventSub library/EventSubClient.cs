@@ -20,6 +20,7 @@ namespace Twitch.EventSub
         public event EventHandler<string?> OnUnexpectedConnectionTermination;
         public event AsyncEventHandler<InvalidAccessTokenException> OnRefreshTokenAsync;
         public event AsyncEventHandler<string?> OnRawMessageAsync;
+        public bool IsConnected { get; private set; }
         public EventSubClient(ILogger<EventSubClient> logger, EventSubClientOptions options)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -36,6 +37,7 @@ namespace Twitch.EventSub
             _socket.OnRevocationMessageAsync += SocketOnRevocationMessageAsyncAsync;
             _socket.OnOutsideDisconnectAsync += SocketOnOutsideDisconnectAsyncAsync;
             _manager.OnRefreshTokenRequestAsync += ManagerOnRefreshTokenRequestAsyncAsync;
+            IsConnected = false;
         }
 
         private async Task SocketOnRawMessageRecievedAsync(object sender, string? e)
@@ -117,6 +119,7 @@ namespace Twitch.EventSub
         /// <returns></returns>
         private async Task SocketOnOutsideDisconnectAsyncAsync(object sender, string? e)
         {
+            IsConnected = false;
             OnUnexpectedConnectionTermination.Invoke(sender, e);
             await _manager.StopAsync();
         }
@@ -144,6 +147,7 @@ namespace Twitch.EventSub
             StartUp(clientId, userId, accessToken, listOfSubs);
             if (await _socket.ConnectAsync())
             {
+                IsConnected = true;
                 return true;
             }
             _logger.LogInformation("[EventSubClient] Connection unsuccessful");
@@ -191,6 +195,7 @@ namespace Twitch.EventSub
         /// <returns></returns>
         public async Task StopAsync()
         {
+            IsConnected = false;
             await _socket.DisconnectAsync();
             await _manager.StopAsync();
         }
