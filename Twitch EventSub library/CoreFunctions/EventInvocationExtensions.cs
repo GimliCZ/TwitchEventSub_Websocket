@@ -9,7 +9,7 @@ namespace Twitch.EventSub.Library.CoreFunctions
         /// </summary>
         internal static Task TryInvoke<TEventArgs>(this AsyncEventHandler<TEventArgs> eventHandler, object sender, TEventArgs eventArgs)
         {
-            return eventHandler.Invoke(sender, eventArgs) ?? Task.CompletedTask;
+            return eventHandler?.Invoke(sender, eventArgs) ?? Task.CompletedTask;
         }
     }
 }
