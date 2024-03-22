@@ -47,7 +47,7 @@ namespace Twitch.EventSub.CoreFunctions
             }
             catch (Exception ex)
             {
-                _logger.LogError("[EventSubClient] - [GenericWebsocket] Fail to invoke message received: {ex}", ex);
+                _logger.LogErrorDetails("[EventSubClient] - [GenericWebsocket] Fail to invoke message received", ex);
             }
         }
 
@@ -62,7 +62,7 @@ namespace Twitch.EventSub.CoreFunctions
 
 
             _sendTimer = new Timer(
-                x => SendRoutineTick((CancellationToken)x),
+                async x => await SendRoutineTick((CancellationToken)x),
                 _sendCancelSource?.Token,
                 Timeout.InfiniteTimeSpan,
                 TimeSpan.Zero);
@@ -93,13 +93,13 @@ namespace Twitch.EventSub.CoreFunctions
             catch (WebSocketException ex)
             {
 #pragma warning disable CA2254
-                _logger.LogDebug("[EventSubClient] - [GenericWebsocket] Case of incomplete disconnect - close sent / close received, proceed" + ex.Message);
+                _logger.LogErrorDetails("[EventSubClient] - [GenericWebsocket] Case of incomplete disconnect - close sent / close received, proceed",ex);
 #pragma warning restore CA2254
             }
             catch (OperationCanceledException ex)
             {
 #pragma warning disable CA2254
-                _logger.LogDebug("[EventSubClient] - [GenericWebsocket] Process canceled, proceed" + ex.Message);
+                _logger.LogErrorDetails("[EventSubClient] - [GenericWebsocket] Process canceled, proceed",ex);
 #pragma warning restore CA2254
             }
 
@@ -115,7 +115,7 @@ namespace Twitch.EventSub.CoreFunctions
             {
                 try
                 {
-                    if (_clientWebSocket != null && _clientWebSocket.State != WebSocketState.Closed && !cancel.IsCancellationRequested)
+                    if ((_clientWebSocket?.State == WebSocketState.Open || _clientWebSocket?.State == WebSocketState.CloseReceived) && !cancel.IsCancellationRequested)
                     {
                         await ReceiveDataInternalAsync(cancel);
                     }
@@ -129,7 +129,7 @@ namespace Twitch.EventSub.CoreFunctions
                 catch (WebSocketException ex)
                 {
 #pragma warning disable CA2254
-                    _logger.LogDebug("[EventSubClient] - [GenericWebsocket] Case of running into cancel while receiving - close sent / close received" + ex.Message);
+                    _logger.LogDebugDetails("[EventSubClient] - [GenericWebsocket] Case of running into cancel while receiving - close sent / close received", ex);
 #pragma warning restore CA2254
                     await DisconnectAsync();
                 }
@@ -152,62 +152,60 @@ namespace Twitch.EventSub.CoreFunctions
             {
                 return;
             }
-            var receiveResult = await (_clientWebSocket.ReceiveAsync(_readBuffer, cancel));
 
-            // If the token is canceled while ReceiveAsync is blocking, the socket state changes to aborted and it can't be used
-            if (cancel.IsCancellationRequested)
+            switch (_clientWebSocket.State)
             {
-                return;
-            }
+                case WebSocketState.Open:
+                    var receiveResult = await _clientWebSocket.ReceiveAsync(_readBuffer, cancel);
 
-            // Termination received from server
-            if (_clientWebSocket?.State == WebSocketState.CloseReceived &&
-                receiveResult.MessageType == WebSocketMessageType.Close)
-            {
+                    if (receiveResult.MessageType == WebSocketMessageType.Close)
+                    {
+                        _sendCancelSource?.Cancel();
+                        await _clientWebSocket.CloseOutputAsync(
+                            WebSocketCloseStatus.NormalClosure,
+                            "Acknowledge Close frame",
+                            CancellationToken.None);
+                        return;
+                    }
+                    if (_readMemoryStream != null)
+                    {
+                        await _readMemoryStream.WriteAsync(_readBuffer.Array.AsMemory(0, receiveResult.Count));
+                        if (_readBuffer.Array != null)
+                        {
+                            Array.Clear(_readBuffer.Array);
+                        }
+                        if (receiveResult.EndOfMessage)
+                        {
+                            _readMemoryStream.Seek(0, SeekOrigin.Begin);
 
-                if (receiveResult.CloseStatusDescription != null && OnServerSideTerminationAsync != null)
-                {
-                    await OnServerSideTerminationAsync.TryInvoke(this, receiveResult.CloseStatusDescription);
-                }
-                _sendCancelSource?.Cancel();
-                await (_clientWebSocket?.CloseAsync(
+                            using (StreamReader readStream = new(_readMemoryStream,
+                                Encoding.UTF8, true))
+                            {
+                                var message = await readStream.ReadToEndAsync();
+                                await InvokeMessageReceivedAsync(message);
+
+                                // Console.WriteLine(message);
+                            }
+                            _readMemoryStream = new MemoryStream();
+                        }
+                    }
+                    break;
+
+                case WebSocketState.CloseReceived:
+                    _sendCancelSource?.Cancel();
+                    await _clientWebSocket.CloseOutputAsync(
                     WebSocketCloseStatus.NormalClosure,
                     "Acknowledge Close frame",
-                    CancellationToken.None) ?? Task.CompletedTask);
-            }
-
-            // Received some data
-            if (_clientWebSocket?.State == WebSocketState.Open &&
-                receiveResult.MessageType != WebSocketMessageType.Close)
-            {
-                if (_readMemoryStream != null)
-                {
-                    await _readMemoryStream.WriteAsync(_readBuffer.Array.AsMemory(0, receiveResult.Count), cancel);
-                    if (_readBuffer.Array != null)
-                        Array.Clear(_readBuffer.Array);
-                    if (receiveResult.EndOfMessage)
-                    {
-                        _readMemoryStream.Seek(0, SeekOrigin.Begin);
-
-                        using (StreamReader readStream = new(_readMemoryStream,
-                                   Encoding.UTF8,
-                                   true))
-                        {
-                            var message = await readStream.ReadToEndAsync();
-                            await InvokeMessageReceivedAsync(message);
-
-                            // Console.WriteLine(message);
-                        }
-                        _readMemoryStream = new MemoryStream();
-                    }
-                }
+                     CancellationToken.None);
+                break;
             }
         }
+
 
         /// <summary>
         ///     Sending loop
         /// </summary>
-        private async void SendRoutineTick(CancellationToken cancel)
+        private async Task SendRoutineTick(CancellationToken cancel)
         {
             if (_sendIsProcessing || _clientWebSocket == null)
             {

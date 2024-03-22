@@ -7,6 +7,8 @@ namespace Twitch.EventSub.Interfaces
 {
     public interface IEventSubClient
     {
+        public bool IsConnected {get;}
+
         event AsyncEventHandler<string?> OnRawMessageAsync;
 
         event EventHandler<string?> OnUnexpectedConnectionTermination;
