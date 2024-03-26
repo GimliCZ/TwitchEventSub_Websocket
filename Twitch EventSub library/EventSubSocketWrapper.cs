@@ -84,14 +84,14 @@ namespace Twitch.EventSub
             await ParseWebSocketMessageAsync(e);
         }
 
-        private Task ParseWebSocketMessageAsync(string e)
+        private async Task<Task> ParseWebSocketMessageAsync(string e)
         {
             try
             {
                 WebSocketMessage message;
                 try
                 {
-                    message = DeserializeMessage(e);
+                    message = await DeserializeMessage(e);
                 }
                 catch (JsonException ex)
                 {
@@ -126,60 +126,68 @@ namespace Twitch.EventSub
             }
         }
 
-        private static WebSocketMessage DeserializeMessage(string message)
+        private static async Task<WebSocketMessage> DeserializeMessage(string message)
         {
-            JObject jsonObject = JObject.Parse(message);
-            if (!jsonObject.TryGetValue("metadata", out JToken? metadataToken) || !(metadataToken is JObject))
+            using (JsonTextReader reader = new JsonTextReader(new StringReader(message)))
             {
-                throw new JsonSerializationException("metadata is missing in the JSON object");
-            }
-            var metadata = metadataToken.ToObject<WebSocketMessageMetadata>();
-            if (metadata == null)
-            {
-                throw new JsonSerializationException();
-            }
-            string messageType = metadata.MessageType;
+                reader.SupportMultipleContent = true;
+                while (await reader.ReadAsync())
+                {
+                    JObject jsonObject = JObject.Load(reader);
+                    if (!jsonObject.TryGetValue("metadata", out JToken? metadataToken) || !(metadataToken is JObject))
+                    {
+                        throw new JsonSerializationException($"metadata is missing in the JSON object {message}");
+                    }
+                    var metadata = metadataToken.ToObject<WebSocketMessageMetadata>();
+                    if (metadata == null)
+                    {
+                        throw new JsonSerializationException();
+                    }
+                    string messageType = metadata.MessageType;
 
-            if (!jsonObject.TryGetValue("payload", out JToken? payloadToken) || !(payloadToken is JObject))
-            {
-                throw new JsonSerializationException("metadata is missing in the JSON object");
-            }
+                    if (!jsonObject.TryGetValue("payload", out JToken? payloadToken) || !(payloadToken is JObject))
+                    {
+                        throw new JsonSerializationException($"metadata is missing in the JSON object {message}");
+                    }
 
-            return messageType switch
-            {
-                "session_welcome" => new WebSocketWelcomeMessage()
-                {
-                    Metadata = metadata,
-                    Payload = payloadToken.ToObject<WebSocketWelcomePayload>()
-                },
-                "notification" => new WebSocketNotificationMessage()
-                {
-                    Metadata = metadata,
-                    Payload = CreateNotificationPayload(payloadToken)
-                },
-                "ping" => new WebSocketPingMessage()
-                {
-                    Metadata = metadata
-                },
-                "session_keepalive" => new WebSocketKeepAliveMessage()
-                {
-                    Metadata = metadata,
-                },
-                "session_reconnect" => new WebSocketReconnectMessage()
-                {
-                    Metadata = metadata,
-                    Payload = payloadToken?.ToObject<WebSocketReconnectPayload>()
-                },
-                "revocation" => new WebSocketRevocationMessage()
-                {
-                    Metadata = metadata,
-                    Payload = payloadToken?.ToObject<WebSocketSubscription>()
-                },
-                _ => throw new JsonSerializationException($"Unsupported message_type: {messageType}")
-            };
+                    return messageType switch
+                    {
+                        "session_welcome" => new WebSocketWelcomeMessage()
+                        {
+                            Metadata = metadata,
+                            Payload = payloadToken.ToObject<WebSocketWelcomePayload>()
+                        },
+                        "notification" => new WebSocketNotificationMessage()
+                        {
+                            Metadata = metadata,
+                            Payload = CreateNotificationPayload(payloadToken)
+                        },
+                        "ping" => new WebSocketPingMessage()
+                        {
+                            Metadata = metadata
+                        },
+                        "session_keepalive" => new WebSocketKeepAliveMessage()
+                        {
+                            Metadata = metadata,
+                        },
+                        "session_reconnect" => new WebSocketReconnectMessage()
+                        {
+                            Metadata = metadata,
+                            Payload = payloadToken?.ToObject<WebSocketReconnectPayload>()
+                        },
+                        "revocation" => new WebSocketRevocationMessage()
+                        {
+                            Metadata = metadata,
+                            Payload = payloadToken?.ToObject<WebSocketSubscription>()
+                        },
+                        _ => throw new JsonSerializationException($"Unsupported message_type: {messageType}")
+                    };
+                }
+                throw new JsonSerializationException($"JSON object was not correctly processed {message}");
+            }
         }
 
-        private static WebSocketNotificationPayload CreateNotificationPayload(JToken payload)
+            private static WebSocketNotificationPayload CreateNotificationPayload(JToken payload)
         {
             var resultMessage = new WebSocketNotificationPayload
             {
