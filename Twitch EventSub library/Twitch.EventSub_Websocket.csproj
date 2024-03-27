@@ -15,7 +15,7 @@
         <License>https://github.com/GimliCZ/TwitchEventSub_Websocket/blob/master/LICENSE</License>
         <RepositoryUrl>https://github.com/GimliCZ/TwitchEventSub_Websocket</RepositoryUrl>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <Version>1.1.4</Version>
+        <Version>1.1.5</Version>
     </PropertyGroup>
 
     <ItemGroup>
