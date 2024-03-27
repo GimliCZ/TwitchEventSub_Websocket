@@ -93,13 +93,13 @@ namespace Twitch.EventSub.CoreFunctions
             catch (WebSocketException ex)
             {
 #pragma warning disable CA2254
-                _logger.LogErrorDetails("[EventSubClient] - [GenericWebsocket] Case of incomplete disconnect - close sent / close received, proceed",ex);
+                _logger.LogErrorDetails("[EventSubClient] - [GenericWebsocket] Case of incomplete disconnect - close sent / close received, proceed", ex);
 #pragma warning restore CA2254
             }
             catch (OperationCanceledException ex)
             {
 #pragma warning disable CA2254
-                _logger.LogErrorDetails("[EventSubClient] - [GenericWebsocket] Process canceled, proceed",ex);
+                _logger.LogErrorDetails("[EventSubClient] - [GenericWebsocket] Process canceled, proceed", ex);
 #pragma warning restore CA2254
             }
 
@@ -124,6 +124,12 @@ namespace Twitch.EventSub.CoreFunctions
                         _sendCancelSource?.Cancel();
                         _clientWebSocket?.Dispose();
                         _clientWebSocket = null;
+                        _readMemoryStream = null;
+                        if (_readBuffer.Array != null)
+                        {
+                            Array.Clear(_readBuffer.Array);
+                        }
+                        _receiveCancelSource?.Cancel();
                     }
                 }
                 catch (WebSocketException ex)
@@ -156,7 +162,7 @@ namespace Twitch.EventSub.CoreFunctions
             switch (_clientWebSocket.State)
             {
                 case WebSocketState.Open:
-                    var receiveResult = await _clientWebSocket.ReceiveAsync(_readBuffer, cancel);
+                    var receiveResult = await _clientWebSocket.ReceiveAsync(_readBuffer, cancel).ConfigureAwait(false);
 
                     if (receiveResult.MessageType == WebSocketMessageType.Close)
                     {
@@ -165,6 +171,10 @@ namespace Twitch.EventSub.CoreFunctions
                             WebSocketCloseStatus.NormalClosure,
                             "Acknowledge Close frame",
                             CancellationToken.None);
+                        if (OnServerSideTerminationAsync != null)
+                        {
+                            await OnServerSideTerminationAsync.TryInvoke(this, "Close frame received").ConfigureAwait(false);
+                        }
                         return;
                     }
                     if (_readMemoryStream != null)
@@ -197,7 +207,11 @@ namespace Twitch.EventSub.CoreFunctions
                     WebSocketCloseStatus.NormalClosure,
                     "Acknowledge Close frame",
                      CancellationToken.None);
-                break;
+                    if (OnServerSideTerminationAsync != null)
+                    {
+                        await OnServerSideTerminationAsync.TryInvoke(this, "Close frame received").ConfigureAwait(false);
+                    }
+                    break;
             }
         }
 
