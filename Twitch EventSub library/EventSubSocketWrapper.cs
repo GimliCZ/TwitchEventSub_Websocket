@@ -33,7 +33,7 @@ namespace Twitch.EventSub
         private WebsocketClient _socket;
 
         private int _keepAlive;
-        private bool _connectionActive = false;
+        private bool IsConnectionActive => _socket?.IsRunning ?? false;
 
         public event AsyncEventHandler<string?> OnRawMessageRecievedAsync;
         public event AsyncEventHandler<string?> OnRegisterSubscriptionsAsync;
@@ -58,8 +58,7 @@ namespace Twitch.EventSub
 
         public async Task<bool> ConnectAsync(Uri url = null)
         {
-            _connectionActive = _socket?.IsRunning ?? false;
-            if (_connectionActive)
+            if (IsConnectionActive)
             {
                 return true;
             }
@@ -67,14 +66,12 @@ namespace Twitch.EventSub
             _socket.MessageReceived.Select(msg => Observable.FromAsync(async () => await SocketOnMessageReceivedAsync(this, msg.Text))).Concat().Subscribe();
             _socket.DisconnectionHappened.Select(disconnectInfo => Observable.FromAsync(async () => await OnServerSideTerminationAsync(this, disconnectInfo.CloseStatusDescription))).Concat().Subscribe();
             await _socket.Start();
-            _connectionActive = _socket.IsRunning;
             return _socket.IsRunning;
         }
 
         public async Task DisconnectAsync()
         {
-            _connectionActive = _socket.IsRunning;
-            if (!_connectionActive)
+            if (!IsConnectionActive)
             {
                 return;
             }
@@ -446,8 +443,7 @@ namespace Twitch.EventSub
                     await _socket.ReconnectOrFail();
                     _socket.MessageReceived.Select(msg => Observable.FromAsync(async () => await SocketOnMessageReceivedAsync(this, msg.Text))).Concat().Subscribe();
                     _socket.DisconnectionHappened.Select(disconnectInfo => Observable.FromAsync(async () => await OnServerSideTerminationAsync(this, disconnectInfo.CloseStatusDescription))).Concat().Subscribe();
-                    _connectionActive = _socket.IsRunning;
-                    if (!_connectionActive)
+                    if (!IsConnectionActive)
                     {
                         _logger.LogInformationDetails("[EventSubClient] - [EventSubSocketWrapper] connection lost during reconnect", message, _socket);
                         return;
