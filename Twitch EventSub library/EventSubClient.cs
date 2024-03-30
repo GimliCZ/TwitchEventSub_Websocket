@@ -30,7 +30,7 @@ namespace Twitch.EventSub
                 return;
             }
             _manager = new EventSubscriptionManager(logger);
-            _socket = new EventSubSocketWrapper(logger, options.CommunicationSpeed);
+            _socket = new EventSubSocketWrapper(logger);
             _socket.OnRawMessageRecievedAsync += SocketOnRawMessageRecievedAsync;
             _socket.OnNotificationMessageAsync += SocketOnNotificationAsync;
             _socket.OnRegisterSubscriptionsAsync += SocketOnRegisterSubscriptionsAsyncAsync;
