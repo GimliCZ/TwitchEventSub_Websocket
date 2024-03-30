@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Net.WebSockets;
+using System.Reactive.Linq;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Twitch.EventSub.CoreFunctions;
@@ -14,6 +16,7 @@ using Twitch.EventSub.Messages.ReconnectMessage;
 using Twitch.EventSub.Messages.RevocationMessage;
 using Twitch.EventSub.Messages.SharedContents;
 using Twitch.EventSub.Messages.WelcomeMessage;
+using Websocket.Client;
 
 namespace Twitch.EventSub
 {
@@ -27,10 +30,10 @@ namespace Twitch.EventSub
 
         private string? SessionId { get; set; }
 
-        private readonly GenericWebsocket _socket;
+        private WebsocketClient _socket;
 
         private int _keepAlive;
-        private bool _connectionActive;
+        private bool IsConnectionActive => _socket?.IsRunning ?? false;
 
         public event AsyncEventHandler<string?> OnRawMessageRecievedAsync;
         public event AsyncEventHandler<string?> OnRegisterSubscriptionsAsync;
@@ -38,13 +41,9 @@ namespace Twitch.EventSub
         public event AsyncEventHandler<WebSocketRevocationMessage> OnRevocationMessageAsync;
         public event AsyncEventHandler<string?> OnOutsideDisconnectAsync;
 
-        public EventSubSocketWrapper(ILogger logger,
-            TimeSpan processingSpeed)
+        public EventSubSocketWrapper(ILogger logger)
         {
-            _socket = new GenericWebsocket(logger, processingSpeed);
             _logger = logger;
-            _socket.OnMessageReceivedAsync += SocketOnMessageReceivedAsync;
-            _socket.OnServerSideTerminationAsync += OnServerSideTerminationAsync;
             _replayProtection = new ReplayProtection(10);
             _watchdog = new Watchdog(logger);
             _watchdog.OnWatchdogTimeout += OnWatchdogTimeoutAsync;
@@ -53,29 +52,32 @@ namespace Twitch.EventSub
         private async Task OnServerSideTerminationAsync(object sender, string e)
         {
             _logger.LogInformation(e,sender);
-            _connectionActive = false;
             await OnOutsideDisconnectAsync.TryInvoke(this, e);
+            _socket.Dispose();
         }
 
-        public async Task<bool> ConnectAsync(string connectUrl = DefaultWebSocketUrl)
+        public async Task<bool> ConnectAsync(Uri url = null)
         {
-            if (_connectionActive)
+            if (IsConnectionActive)
             {
                 return true;
             }
-            _connectionActive = await _socket.ConnectAsync(connectUrl);
-            return _connectionActive;
+            _socket = new WebsocketClient(url ?? new Uri(DefaultWebSocketUrl));
+            _socket.MessageReceived.Select(msg => Observable.FromAsync(async () => await SocketOnMessageReceivedAsync(this, msg.Text))).Concat().Subscribe();
+            _socket.DisconnectionHappened.Select(disconnectInfo => Observable.FromAsync(async () => await OnServerSideTerminationAsync(this, disconnectInfo.CloseStatusDescription))).Concat().Subscribe();
+            await _socket.Start();
+            return _socket.IsRunning;
         }
 
         public async Task DisconnectAsync()
         {
-            if (!_connectionActive)
+            if (!IsConnectionActive)
             {
                 return;
             }
             _watchdog.Stop();
-            await _socket.DisconnectAsync();
-            _connectionActive = false;
+            await _socket.Stop(WebSocketCloseStatus.NormalClosure, "Closing");
+            _socket.Dispose();
         }
 
         private async Task SocketOnMessageReceivedAsync(object sender, string e)
@@ -432,15 +434,27 @@ namespace Twitch.EventSub
 
             _awaitForReconnect = true;
             _watchdog.Stop();
-            await _socket.DisconnectAsync();
+
             if (message?.Payload?.Session.ReconnectUrl != null)
             {
-                _connectionActive = await _socket.ConnectAsync(message.Payload.Session.ReconnectUrl);
-                if (!_connectionActive)
+                if (Uri.TryCreate(message.Payload.Session.ReconnectUrl, new UriCreationOptions() { DangerousDisablePathAndQueryCanonicalization = false }, out var Url))
                 {
-                    _logger.LogInformationDetails("[EventSubClient] - [EventSubSocketWrapper] connection lost during reconnect",message, _socket);
+                    _socket.Url = Url;
+                    await _socket.ReconnectOrFail();
+                    _socket.MessageReceived.Select(msg => Observable.FromAsync(async () => await SocketOnMessageReceivedAsync(this, msg.Text))).Concat().Subscribe();
+                    _socket.DisconnectionHappened.Select(disconnectInfo => Observable.FromAsync(async () => await OnServerSideTerminationAsync(this, disconnectInfo.CloseStatusDescription))).Concat().Subscribe();
+                    if (!IsConnectionActive)
+                    {
+                        _logger.LogInformationDetails("[EventSubClient] - [EventSubSocketWrapper] connection lost during reconnect", message, _socket);
+                        return;
+                    }
+                }
+                else
+                {
+                    _logger.LogInformationDetails("[EventSubClient] - [EventSubSocketWrapper] Didn't recieve valid Url during Reconnect", message, _socket);
                     return;
                 }
+
             }
             _watchdog.Start(_keepAlive);
             SessionId = message?.Payload?.Session.Id;
@@ -478,13 +492,13 @@ namespace Twitch.EventSub
 
         private async Task OnWatchdogTimeoutAsync(object sender, string e)
         {
-            await _socket.DisconnectAsync();
+            await _socket.Stop(WebSocketCloseStatus.NormalClosure,"Server didn't respond in time");
             _logger.LogWarningDetails("[EventSubClient] - [EventSubSocketWrapper] Server didn't respond in time",sender, e, DateTime.Now);
             if (OnOutsideDisconnectAsync != null)
             {
                 await OnOutsideDisconnectAsync.TryInvoke(this, e);
             }
-            _connectionActive = false;
+            _socket.Dispose();
         }
     }
 
