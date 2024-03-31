@@ -49,10 +49,14 @@ namespace Twitch.EventSub
             _watchdog.OnWatchdogTimeout += OnWatchdogTimeoutAsync;
         }
 
-        private async Task OnServerSideTerminationAsync(object sender, string e)
+        private async Task OnServerSideTerminationAsync(object sender, DisconnectionInfo e)
         {
-            _logger.LogInformation(e,sender);
-            await OnOutsideDisconnectAsync.TryInvoke(this, e);
+            if (e.Type == DisconnectionType.ByServer || e.Type == DisconnectionType.Lost)
+            {
+                _logger.LogInformationDetails(e, sender);
+                await OnOutsideDisconnectAsync.TryInvoke(this, e.CloseStatusDescription);
+            }
+            _watchdog.Stop();
             _socket.Dispose();
         }
 
@@ -64,7 +68,7 @@ namespace Twitch.EventSub
             }
             _socket = new WebsocketClient(url ?? new Uri(DefaultWebSocketUrl));
             _socket.MessageReceived.Select(msg => Observable.FromAsync(async () => await SocketOnMessageReceivedAsync(this, msg.Text))).Concat().Subscribe();
-            _socket.DisconnectionHappened.Select(disconnectInfo => Observable.FromAsync(async () => await OnServerSideTerminationAsync(this, disconnectInfo.CloseStatusDescription))).Concat().Subscribe();
+            _socket.DisconnectionHappened.Select(disconnectInfo => Observable.FromAsync(async () => await OnServerSideTerminationAsync(this, disconnectInfo))).Concat().Subscribe();
             await _socket.Start();
             return _socket.IsRunning;
         }
@@ -442,7 +446,7 @@ namespace Twitch.EventSub
                     _socket.Url = Url;
                     await _socket.ReconnectOrFail();
                     _socket.MessageReceived.Select(msg => Observable.FromAsync(async () => await SocketOnMessageReceivedAsync(this, msg.Text))).Concat().Subscribe();
-                    _socket.DisconnectionHappened.Select(disconnectInfo => Observable.FromAsync(async () => await OnServerSideTerminationAsync(this, disconnectInfo.CloseStatusDescription))).Concat().Subscribe();
+                    _socket.DisconnectionHappened.Select(disconnectInfo => Observable.FromAsync(async () => await OnServerSideTerminationAsync(this, disconnectInfo))).Concat().Subscribe();
                     if (!IsConnectionActive)
                     {
                         _logger.LogInformationDetails("[EventSubClient] - [EventSubSocketWrapper] connection lost during reconnect", message, _socket);
