@@ -116,6 +116,7 @@ namespace Twitch.EventSub
 
             if (_isRunning)
             {
+                _logger.LogInformation("[EventSubClient] - [EventSubscriptionManager] Subscription Manager was attempted to run multiple times.");
                 return;
             }
             _cancelSource = new CancellationTokenSource();
@@ -129,6 +130,7 @@ namespace Twitch.EventSub
         {
             if (_requestedSubscriptions == null || _clientId == null || _accessToken == null)
             {
+                _logger.LogInformation("[EventSubClient] - [EventSubscriptionManager] Revocation Resolver got subscriptions, clientId or accessToken as Null");
                 return;
             }
             foreach (var sub in _requestedSubscriptions.Where(
@@ -168,8 +170,7 @@ namespace Twitch.EventSub
         {
             if (!_setup)
             {
-                _timer?.Dispose();
-                return;
+                throw new InvalidOperationException();
             }
             if (_isRunning)
             {
@@ -177,6 +178,10 @@ namespace Twitch.EventSub
                 await ClearAsync(_cancelSource);
                 _cancelSource.Cancel();
                 _timer?.Dispose();
+            }
+            else
+            {
+                _logger.LogInformation("[EventSubClient] - [EventSubscriptionManager] Subscription Manager was already stopped.");
             }
         }
         /// <summary>
@@ -214,6 +219,7 @@ namespace Twitch.EventSub
             if (_checkRunning)
             {
                 // await until check is done
+                _logger.LogInformation("[EventSubClient] - [EventSubscriptionManager] Check tried to run while already running.");
                 return;
             }
             if (!_setup)
@@ -222,6 +228,7 @@ namespace Twitch.EventSub
             }
             if (_requestedSubscriptions == null)
             {
+                _logger.LogInformation("[EventSubClient] - [EventSubscriptionManager] Requested subscriptions returned Null");
                 return;
             }
             _checkRunning = true;
