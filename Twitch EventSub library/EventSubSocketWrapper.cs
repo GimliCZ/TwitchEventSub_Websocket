@@ -27,13 +27,10 @@ namespace Twitch.EventSub
         private readonly ReplayProtection _replayProtection;
         private bool _awaitForReconnect = false;
         private readonly Watchdog _watchdog;
-
         private string? SessionId { get; set; }
-
         private WebsocketClient _socket;
-
         private int _keepAlive;
-        private bool IsConnectionActive => _socket?.IsRunning ?? false;
+        public bool IsConnectionActive => _socket?.IsRunning ?? false;
 
         public event AsyncEventHandler<string?> OnRawMessageRecievedAsync;
         public event AsyncEventHandler<string?> OnRegisterSubscriptionsAsync;
@@ -64,6 +61,7 @@ namespace Twitch.EventSub
         {
             if (IsConnectionActive)
             {
+                _logger.LogInformation("[EventSubClient] - [EventSubSocketWrapper] Socket already active");
                 return true;
             }
             _socket = new WebsocketClient(url ?? new Uri(DefaultWebSocketUrl));
@@ -77,6 +75,7 @@ namespace Twitch.EventSub
         {
             if (!IsConnectionActive)
             {
+                _logger.LogInformation("[EventSubClient] - [EventSubSocketWrapper] Socket already disconnected");
                 return;
             }
             _watchdog.Stop();
@@ -484,6 +483,8 @@ namespace Twitch.EventSub
                 _socket.Send("Pong");
                 return Task.CompletedTask;
             }
+            //This should not happen, but to be sure
+            _logger.LogInformation("[EventSubClient] - [EventSubSocketWrapper] We didnt respond to the ping during reconnect. Notify developer for fix.");
             return Task.CompletedTask;
         }
 
