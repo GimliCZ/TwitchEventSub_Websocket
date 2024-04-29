@@ -48,16 +48,13 @@ namespace Twitch.EventSub
             _sessionId = sessionId ?? throw new ArgumentNullException(nameof(sessionId));
             if (requestedSubscriptions == null)
             {
-                throw new NullReferenceException();
+                throw new ArgumentNullException(nameof(requestedSubscriptions));
             }
             foreach (var typeListOfSub in requestedSubscriptions)
             {
                 typeListOfSub.Transport.SessionId = _sessionId;
             }
-            while (_checkRunning)
-            {
-                await Task.Delay(TimeSpan.FromMilliseconds(300));
-            }
+            await WaitUntilCheckCompletion();
             _requestedSubscriptions = requestedSubscriptions;
             _setup = true;
             _logger.LogInformation("[EventSubClient] - [EventSubscriptionManager]  Event Sub ready: Client Id: " + clientId + " accessToken " + accessToken + " session id" + sessionId);
@@ -79,7 +76,7 @@ namespace Twitch.EventSub
             }
             if (_sessionId == null)
             {
-                throw new NullReferenceException();
+                throw new ArgumentNullException(nameof(_sessionId));
 
             }
 
@@ -91,10 +88,7 @@ namespace Twitch.EventSub
                 {
                     typeListOfSub.Transport.SessionId = _sessionId;
                 }
-                while (_checkRunning)
-                {
-                    await Task.Delay(TimeSpan.FromMilliseconds(300));
-                }
+                await WaitUntilCheckCompletion();
                 _requestedSubscriptions = requestedSubscriptions;
             }
             await RunCheckAsync(_cancelSource);
@@ -190,18 +184,39 @@ namespace Twitch.EventSub
         /// <returns></returns>
         private async Task ClearAsync(CancellationTokenSource clSource)
         {
-            if (_clientId == null || _accessToken == null)
+            if (_clientId == null)
             {
-                throw new ArgumentNullException();
+                throw new ArgumentNullException(nameof(_clientId));
+            }
+            if (_accessToken == null)
+            {
+                throw new ArgumentNullException(nameof(_accessToken));
             }
             var allSubscriptions = await ApiTryGetAllSubscriptionsAsync(_clientId, _accessToken, clSource, StatusProvider.SubscriptionStatus.Empty);
+            if (allSubscriptions is null) {
+                return;
+            }
             foreach (var getSubscriptionsResponse in allSubscriptions)
             {
+                if (getSubscriptionsResponse is null || getSubscriptionsResponse.Data is null)
+                {
+                    _logger.LogInformation("[EventSubClient] - [EventSubscriptionManager] Retrieved null Subscription Response");
+                    continue;
+                }
+
                 foreach (var subscription in getSubscriptionsResponse.Data)
                 {
+
+                    if (subscription is null)
+                    {
+                        _logger.LogInformation("[EventSubClient] - [EventSubscriptionManager] Retrieved null Subscription");
+                        continue;
+                    }
+
                     if (!await ApiTryUnSubscribeAsync(_clientId, _accessToken, subscription.Id, clSource))
                     {
-                        _logger.LogInformation("[EventSubClient] - [EventSubscriptionManager] Failed to unsubscribe during clear" + subscription.Type);
+                        _logger.LogWarningDetails("[EventSubClient] - [EventSubscriptionManager] Failed to unsubscribe during clear", subscription);
+                        continue;
                     }
                     _logger.LogInformation("[EventSubClient] - [EventSubscriptionManager] Sub cleared: " + subscription.Type);
                 }
@@ -231,9 +246,26 @@ namespace Twitch.EventSub
                 _logger.LogInformation("[EventSubClient] - [EventSubscriptionManager] Requested subscriptions returned Null");
                 return;
             }
-            _checkRunning = true;
+            try
+            {
+                _checkRunning = true;
+                await RunCheckInternalAsync(clSource);
+            }
+            catch(Exception)
+            {
+                throw;
+            }
+            finally
+            {
+                _checkRunning = false;
+            }
+        }
+
+        private async Task RunCheckInternalAsync(CancellationTokenSource clSource)
+        {
             //test for dupes
-            if (_requestedSubscriptions
+            // DOC: _requestedSubscriptions is always non null type
+            if (_requestedSubscriptions!
                 .GroupBy(reqSub => new
                 {
                     reqSub.Type
@@ -284,11 +316,11 @@ namespace Twitch.EventSub
 
                 // Find subscriptions that are extra (present in activeSubscriptions but not in _requestedSubscriptions)
                 var extraSubscriptions = activeSubscriptions
-                .Where(subscription => !_requestedSubscriptions.Any(reqSub =>
+                .Where(subscription => !_requestedSubscriptions!.Any(reqSub =>
                 reqSub.Type == subscription.Type && reqSub.Version == subscription.Version)).ToList();
 
                 // Find subscriptions that are missing (present in _requestedSubscriptions but not in activeSubscriptions)
-                var missingSubscriptions = _requestedSubscriptions
+                var missingSubscriptions = _requestedSubscriptions!
                 .Where(reqSub => !activeSubscriptions.Any(subscription =>
                 subscription.Type == reqSub.Type && subscription.Version == reqSub.Version)).ToList();
 
@@ -319,7 +351,6 @@ namespace Twitch.EventSub
                     }
                 }
             }
-            _checkRunning = false;
         }
 
         private async Task<bool> ApiTrySubscribeAsync(string clientId, string accessToken, CreateSubscriptionRequest create, CancellationTokenSource clSource)
@@ -334,7 +365,7 @@ namespace Twitch.EventSub
             return await TryFuncAsync(TryUnSubscribe);
         }
 
-        private async Task<List<GetSubscriptionsResponse>> ApiTryGetAllSubscriptionsAsync(string clientId, string accessToken, CancellationTokenSource clSource, StatusProvider.SubscriptionStatus statusSelector)
+        private async Task<List<GetSubscriptionsResponse>?> ApiTryGetAllSubscriptionsAsync(string clientId, string accessToken, CancellationTokenSource clSource, StatusProvider.SubscriptionStatus statusSelector)
         {
             async Task<List<GetSubscriptionsResponse>> TryGetAllSubscriptionsAsync() => await _api.GetAllSubscriptionsAsync(clientId, accessToken, clSource, statusSelector);
             return await TryFuncAsync(TryGetAllSubscriptionsAsync);
@@ -348,7 +379,7 @@ namespace Twitch.EventSub
         /// <typeparam name="TType"></typeparam>
         /// <param name="apiCallAction"></param>
         /// <returns></returns>
-        private async Task<TType> TryFuncAsync<TType>(Func<Task<TType>> apiCallAction)
+        private async Task<TType?> TryFuncAsync<TType>(Func<Task<TType>> apiCallAction)
         {
             try
             {
@@ -370,7 +401,17 @@ namespace Twitch.EventSub
                 _logger.LogInformationDetails("[EventSubClient] - [EventSubscriptionManager] Api call failed due to:", ex);
             }
             //This is expected behavior. If we get null or false, we handle it in higher part of function
+            _logger.LogWarningDetails("[EventSubClient] - [EventSubscriptionManager] Try Func Async returned Default value.", apiCallAction.Method.Name);
             return default;
+        }
+        private async Task WaitUntilCheckCompletion()
+        {
+            CancellationTokenSource cls = new CancellationTokenSource();
+            cls.CancelAfter(TimeSpan.FromSeconds(5));
+            while (_checkRunning && !cls.IsCancellationRequested)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(300));
+            }
         }
     }
 }
