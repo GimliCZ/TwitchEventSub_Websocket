@@ -57,7 +57,7 @@ namespace Twitch.EventSub
             _socket.Dispose();
         }
 
-        public async Task<bool> ConnectAsync(Uri url = null)
+        public async Task<bool> ConnectAsync(Uri? url = null)
         {
             if (IsConnectionActive)
             {

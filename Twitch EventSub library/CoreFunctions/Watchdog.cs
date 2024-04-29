@@ -42,10 +42,12 @@ namespace Twitch.EventSub.CoreFunctions
         /// <summary>
         /// Renews timing 
         /// </summary>
-        /// <exception cref="NullReferenceException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
         public void Reset()
         {
-            if (_timer == null) throw new NullReferenceException();
+            if (_timer == null) {
+                throw new ArgumentNullException(nameof(_timer));
+            }
             if (_isRunning)
             {
                 _timer.Change(_timeout, Timeout.Infinite);
@@ -59,10 +61,12 @@ namespace Twitch.EventSub.CoreFunctions
         /// <summary>
         /// Stops watchdog
         /// </summary>
-        /// <exception cref="NullReferenceException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
         public void Stop()
         {
-            if (_timer == null) throw new NullReferenceException();
+            if (_timer == null) {
+                throw new ArgumentNullException(nameof(_timer));
+            }
             if (_isRunning)
             {
                 _timer.Change(Timeout.Infinite, Timeout.Infinite);

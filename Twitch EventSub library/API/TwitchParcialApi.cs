@@ -189,18 +189,5 @@ namespace Twitch.EventSub.API
 
             return allSubscriptions;
         }
-
-        /// <summary>
-        /// Small report function for api related errors.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="report"></param>
-        /// <returns>if bool then false if string NULL etc</returns>
-        private T? LogDiscrepancy<T>(string report)
-        {
-            _logger.LogWarning(report);
-            return default;
-        }
-
     }
 }
