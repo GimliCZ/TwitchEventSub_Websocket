@@ -10,7 +10,7 @@ namespace Twitch.EventSub.CoreFunctions
         private bool _isRunning;
         private readonly ILogger _logger;
 
-        public event AsyncEventHandler<string> OnWatchdogTimeout;
+        public event AsyncEventHandler<string, Watchdog> OnWatchdogTimeout;
 
         public Watchdog(ILogger logger)
         {
@@ -45,7 +45,8 @@ namespace Twitch.EventSub.CoreFunctions
         /// <exception cref="ArgumentNullException"></exception>
         public void Reset()
         {
-            if (_timer == null) {
+            if (_timer == null)
+            {
                 throw new ArgumentNullException(nameof(_timer));
             }
             if (_isRunning)
@@ -64,7 +65,8 @@ namespace Twitch.EventSub.CoreFunctions
         /// <exception cref="ArgumentNullException"></exception>
         public void Stop()
         {
-            if (_timer == null) {
+            if (_timer == null)
+            {
                 throw new ArgumentNullException(nameof(_timer));
             }
             if (_isRunning)

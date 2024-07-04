@@ -7,7 +7,7 @@ namespace Twitch.EventSub.Library.CoreFunctions
         /// <summary>
         /// Invokes the event handler when it is not null. Returns a completed task otherwise.
         /// </summary>
-        internal static Task TryInvoke<TEventArgs>(this AsyncEventHandler<TEventArgs> eventHandler, object sender, TEventArgs eventArgs)
+        internal static Task TryInvoke<TEventArgs, T>(this AsyncEventHandler<TEventArgs, T> eventHandler, T sender, TEventArgs eventArgs)
         {
             return eventHandler?.Invoke(sender, eventArgs) ?? Task.CompletedTask;
         }

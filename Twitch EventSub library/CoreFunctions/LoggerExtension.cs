@@ -13,8 +13,8 @@ namespace Twitch.EventSub.CoreFunctions
             if (!logger.IsEnabled(logLevel))
                 return logger;
 
-                args ??= Array.Empty<object>();
-         
+            args ??= Array.Empty<object>();
+
 
             var message = string.Join(Environment.NewLine, args.OfType<string>());
             var details = string.Join(Environment.NewLine, args.Except(args.OfType<string>()).Select(d => d is Exception ? FormatExceptionDetails(d as Exception) : Newtonsoft.Json.JsonConvert.SerializeObject(d)));

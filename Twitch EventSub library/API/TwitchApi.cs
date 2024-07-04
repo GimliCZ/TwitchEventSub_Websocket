@@ -8,15 +8,9 @@ using Twitch.EventSub.CoreFunctions;
 
 namespace Twitch.EventSub.API
 {
-    public class TwitchParcialApi
+    public static class TwitchApi
     {
-        private readonly string _baseUrl = "https://api.twitch.tv/helix/eventsub/subscriptions";
-        private readonly ILogger _logger;
-
-        public TwitchParcialApi(ILogger Logger)
-        {
-            _logger = Logger;
-        }
+        private const string BaseUrl = "https://api.twitch.tv/helix/eventsub/subscriptions";
         /// <summary>
         /// Function sends filled CreateSubscriptionRequest to twitch for processing
         /// </summary>
@@ -26,7 +20,7 @@ namespace Twitch.EventSub.API
         /// <returns>True on success, false on failure</returns>
         /// <exception cref="InvalidAccessTokenException"></exception>
         /// <exception cref="Exception">This state means that accessToken is not set up properly for given request</exception>
-        public async Task<bool> SubscribeAsync(string? clientId, string? accessToken, CreateSubscriptionRequest request, CancellationTokenSource clSource)
+        public static async Task<bool> SubscribeAsync(string? clientId, string? accessToken, CreateSubscriptionRequest request, CancellationTokenSource clSource, ILogger logger)
         {
             using (var httpClient = new HttpClient())
             {
@@ -37,7 +31,7 @@ namespace Twitch.EventSub.API
                     string requestBody = JsonConvert.SerializeObject(request);
                     var content = new StringContent(requestBody, Encoding.UTF8, "application/json");
 
-                    var response = await httpClient.PostAsync(_baseUrl, content, clSource.Token);
+                    var response = await httpClient.PostAsync(BaseUrl, content, clSource.Token);
                     switch (response.StatusCode)
                     {
                         case HttpStatusCode.Accepted:
@@ -47,13 +41,13 @@ namespace Twitch.EventSub.API
                         case HttpStatusCode.Forbidden:
                             throw new Exception("Subscribe - Invalid Scopes");
                         default:
-                            _logger.LogWarningDetails("[EventSubClient] - [TwitchPartialApi] - Subscribe got non-standard status code",requestBody, content, response);
+                            logger.LogWarningDetails("[EventSubClient] - [TwitchPartialApi] - Subscribe got non-standard status code", requestBody, content, response);
                             return false;
                     }
                 }
                 catch (HttpRequestException ex)
                 {
-                    _logger.LogErrorDetails($"[EventSubClient] - [TwitchPartialApi] - SubscribeAsync returned exception",ex, request);
+                    logger.LogErrorDetails($"[EventSubClient] - [TwitchPartialApi] - SubscribeAsync returned exception", ex, request);
                     return false;
                 }
             }
@@ -66,7 +60,7 @@ namespace Twitch.EventSub.API
         /// <param name="subscriptionId"></param>
         /// <returns>True on success, false on failure</returns>
         /// <exception cref="InvalidAccessTokenException"></exception>
-        public async Task<bool> UnSubscribeAsync(string? clientId, string? accessToken, string subscriptionId, CancellationTokenSource clSource)
+        public static async Task<bool> UnSubscribeAsync(string? clientId, string? accessToken, string subscriptionId, CancellationTokenSource clSource, ILogger logger)
         {
             using (var httpClient = new HttpClient())
             {
@@ -74,7 +68,7 @@ namespace Twitch.EventSub.API
                 httpClient.DefaultRequestHeaders.Add("Client-Id", clientId);
                 try
                 {
-                    var url = $"{_baseUrl}?id={subscriptionId}";
+                    var url = $"{BaseUrl}?id={subscriptionId}";
                     var response = await httpClient.DeleteAsync(url, clSource.Token);
 
                     switch (response.StatusCode)
@@ -83,13 +77,13 @@ namespace Twitch.EventSub.API
                         case HttpStatusCode.Unauthorized:
                             throw new InvalidAccessTokenException("Unsubscribe failed due" + await response.Content.ReadAsStringAsync(clSource.Token) + response.ReasonPhrase);
                         default:
-                            _logger.LogWarningDetails("[EventSubClient] - [TwitchPartialApi] - UnSubscribeAsync got non-standard status code:", response);
+                            logger.LogWarningDetails("[EventSubClient] - [TwitchPartialApi] - UnSubscribeAsync got non-standard status code:", response);
                             return false;
                     };
                 }
                 catch (HttpRequestException ex)
                 {
-                    _logger.LogErrorDetails($"[EventSubClient] - [TwitchPartialApi] - UnsubscribeAsync returned exception", ex);
+                    logger.LogErrorDetails($"[EventSubClient] - [TwitchPartialApi] - UnsubscribeAsync returned exception", ex);
                     return false;
                 }
             }
@@ -103,7 +97,7 @@ namespace Twitch.EventSub.API
         /// <param name="after"></param>
         /// <returns cref="GetSubscriptionsResponse"> Provides segment of subscriptions, content MAY BE NULL</returns>
         /// <exception cref="InvalidAccessTokenException"></exception>
-        private async Task<GetSubscriptionsResponse?> GetSubscriptionsAsync(string? clientId, string? accessToken, StatusProvider.SubscriptionStatus statusSelector, CancellationTokenSource clSource, string? after = null)
+        private static async Task<GetSubscriptionsResponse?> GetSubscriptionsAsync(string? clientId, string? accessToken, StatusProvider.SubscriptionStatus statusSelector, CancellationTokenSource clSource, ILogger logger, string? after = null)
         {
             var status = StatusProvider.GetStatusString(statusSelector);
 
@@ -114,7 +108,7 @@ namespace Twitch.EventSub.API
 
                 try
                 {
-                    var queryBuilder = new StringBuilder(_baseUrl);
+                    var queryBuilder = new StringBuilder(BaseUrl);
 
                     if (!string.IsNullOrEmpty(status))
                         queryBuilder.Append($"?status={WebUtility.UrlEncode(status)}");
@@ -133,14 +127,14 @@ namespace Twitch.EventSub.API
                     {
                         case HttpStatusCode.OK: return JsonConvert.DeserializeObject<GetSubscriptionsResponse>(body);
                         case HttpStatusCode.Unauthorized: throw new InvalidAccessTokenException("GetSubscriptions failed due" + body + response.ReasonPhrase);
-                        default: 
-                            _logger.LogWarningDetails("[EventSubClient] - [TwitchPartialApi] - GetSubscriptions got non-standard status code", queryBuilder, response);
+                        default:
+                            logger.LogWarningDetails("[EventSubClient] - [TwitchPartialApi] - GetSubscriptions got non-standard status code", queryBuilder, response);
                             return default;
                     }
                 }
                 catch (HttpRequestException ex)
                 {
-                    _logger.LogErrorDetails($"[EventSubClient] - [TwitchPartialApi] - GetSubscriptions returned exception", ex, status);
+                    logger.LogErrorDetails($"[EventSubClient] - [TwitchPartialApi] - GetSubscriptions returned exception", ex, status);
                     return default;
                 }
             }
@@ -153,7 +147,7 @@ namespace Twitch.EventSub.API
         /// <param name="statusSelector"></param>
         /// <returns> list of subscriptions</returns>
         /// <exception cref="InvalidAccessTokenException">May provide exception from GetSubscriptionsAsync</exception>
-        public async Task<List<GetSubscriptionsResponse>> GetAllSubscriptionsAsync(string? clientId, string? accessToken, CancellationTokenSource clSource, StatusProvider.SubscriptionStatus statusSelector = StatusProvider.SubscriptionStatus.Enabled)
+        public static async Task<List<GetSubscriptionsResponse>> GetAllSubscriptionsAsync(string? clientId, string? accessToken, CancellationTokenSource clSource, ILogger logger, StatusProvider.SubscriptionStatus statusSelector = StatusProvider.SubscriptionStatus.Enabled)
         {
             var allSubscriptions = new List<GetSubscriptionsResponse>();
             string? afterCursor = null;
@@ -161,7 +155,7 @@ namespace Twitch.EventSub.API
 
             for (int i = 0; i < totalPossibleIterations; i++)
             {
-                var response = await GetSubscriptionsAsync(clientId, accessToken, statusSelector, clSource, afterCursor);
+                var response = await GetSubscriptionsAsync(clientId, accessToken, statusSelector, clSource, logger, afterCursor);
                 if (response != null)
                 {
                     allSubscriptions.Add(response);
@@ -173,7 +167,7 @@ namespace Twitch.EventSub.API
                 }
                 else
                 {
-                    _logger.LogInformation("[EventSubClient] - [TwitchPartialApi] Response returned null cause of invalid userId or filter parameter");
+                    logger.LogInformation("[EventSubClient] - [TwitchPartialApi] Response returned null cause of invalid userId or filter parameter");
                     break;
                 }
 
@@ -184,10 +178,47 @@ namespace Twitch.EventSub.API
             }
             if (allSubscriptions.Count == 0)
             {
-                _logger.LogInformation("[EventSubClient] - [TwitchPartialApi] List of subscriptions returned EMPTY!");
+                logger.LogInformation("[EventSubClient] - [TwitchPartialApi] List of subscriptions returned EMPTY!");
             }
 
             return allSubscriptions;
+        }
+
+        private const string ValidateUrl = "https://id.twitch.tv/oauth2/validate";
+        /// <summary>
+        /// Validates the provided Twitch access token.
+        /// </summary>
+        /// <param name="accessToken">The access token to validate.</param>
+        /// <param name="clSource">CancellationTokenSource for the request.</param>
+        /// <param name="logger">ILogger for logging.</param>
+        /// <returns>True if the token is valid, false if not.</returns>
+        /// <exception cref="InvalidAccessTokenException"></exception>
+        public static async Task<bool> ValidateTokenAsync(string? accessToken, CancellationTokenSource clSource, ILogger logger)
+        {
+            using (var httpClient = new HttpClient())
+            {
+                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("OAuth", accessToken);
+                try
+                {
+                    var response = await httpClient.GetAsync(ValidateUrl, clSource.Token);
+                    switch (response.StatusCode)
+                    {
+                        case System.Net.HttpStatusCode.OK:
+                            return true;
+                        case System.Net.HttpStatusCode.Unauthorized:
+                            var errorMessage = await response.Content.ReadAsStringAsync(clSource.Token);
+                            throw new InvalidAccessTokenException($"ValidateToken failed: {errorMessage} {response.ReasonPhrase}");
+                        default:
+                            logger.LogWarning("ValidateToken got non-standard status code: {StatusCode}", response.StatusCode);
+                            return false;
+                    }
+                }
+                catch (HttpRequestException ex)
+                {
+                    logger.LogError(ex, "ValidateTokenAsync encountered an exception.");
+                    return false;
+                }
+            }
         }
     }
 }

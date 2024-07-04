@@ -2,135 +2,64 @@
 using Twitch.EventSub.CoreFunctions;
 using Twitch.EventSub.Library.Messages.NotificationMessage.Events;
 using Twitch.EventSub.Messages.NotificationMessage.Events;
+using Twitch.EventSub.User;
 
 namespace Twitch.EventSub.Interfaces
 {
     public interface IEventSubClient
     {
-        public bool IsConnected {get;}
-
-        event AsyncEventHandler<string?> OnRawMessageAsync;
-
+        event AsyncEventHandler<BanEvent, UserSequencer> OnBanEventAsync;
+        event AsyncEventHandler<FollowEvent, UserSequencer> OnFollowEventAsync;
+        event AsyncEventHandler<GoalBeginEvent, UserSequencer> OnGoalBeginEventAsync;
+        event AsyncEventHandler<GoalEndEvent, UserSequencer> OnGoalEndEventAsync;
+        event AsyncEventHandler<GoalProgressEvent, UserSequencer> OnGoalProgressEventAsync;
+        event AsyncEventHandler<GuestStarGuestUpdateEvent, UserSequencer> OnGuestStarGuestUpdateEventAsync;
+        event AsyncEventHandler<GuestStarSessionBeginEvent, UserSequencer> OnGuestStarSessionBeginEventAsync;
+        event AsyncEventHandler<GuestStarSessionEndEvent, UserSequencer> OnGuestStarSessionEndEventAsync;
+        event AsyncEventHandler<GuestStarSettingsUpdateEvent, UserSequencer> OnGuestStarSettingsUpdateEventAsync;
+        event AsyncEventHandler<GuestStarSlotUpdateEvent, UserSequencer> OnGuestStarSlotUpdateEventAsync;
+        event AsyncEventHandler<HypeTrainBeginEvent, UserSequencer> OnHypeTrainBeginEventAsync;
+        event AsyncEventHandler<HypeTrainEndEvent, UserSequencer> OnHypeTrainEndEventAsync;
+        event AsyncEventHandler<HypeTrainProgressEvent, UserSequencer> OnHypeTrainProgressEventAsync;
+        event AsyncEventHandler<ChannelChatMessage, UserSequencer> OnChannelChatEventAsync;
+        event AsyncEventHandler<CharityCampaignProgressEvent, UserSequencer> OnCharityCampaignProgressEventAsync;
+        event AsyncEventHandler<CharityCampaignStartEvent, UserSequencer> OnCharityCampaignStartEventAsync;
+        event AsyncEventHandler<CharityCampaignStopEvent, UserSequencer> OnCharityCampaignStopEventAsync;
+        event AsyncEventHandler<CharityDonationEvent, UserSequencer> OnCharityDonationEventAsync;
+        event AsyncEventHandler<CheerEvent, UserSequencer> OnCheerEventAsync;
+        event AsyncEventHandler<ModeratorAddEvent, UserSequencer> OnModeratorAddEventAsync;
+        event AsyncEventHandler<ModeratorRemoveEvent, UserSequencer> OnModeratorRemoveEventAsync;
+        event AsyncEventHandler<PointsCustomRewardAddEvent, UserSequencer> OnPointsCustomRewardAddEventAsync;
+        event AsyncEventHandler<PointsCustomRewardRedemptionAddEvent, UserSequencer> OnPointsCustomRewardRedemptionAddEventAsync;
+        event AsyncEventHandler<PointsCustomRewardRedemptionUpdateEvent, UserSequencer> OnPointsCustomRewardRedemptionUpdateEventAsync;
+        event AsyncEventHandler<PointsCustomRewardRemoveEvent, UserSequencer> OnPointsCustomRewardRemoveEventAsync;
+        event AsyncEventHandler<PointsCustomRewardUpdateEvent, UserSequencer> OnPointsCustomRewardUpdateEventAsync;
+        event AsyncEventHandler<PollBeginEvent, UserSequencer> OnPollBeginEventAsync;
+        event AsyncEventHandler<PollEndEvent, UserSequencer> OnPollEndEventAsync;
+        event AsyncEventHandler<PollProgressEvent, UserSequencer> OnPollProgressEventAsync;
+        event AsyncEventHandler<PredictionBeginEvent, UserSequencer> OnPredictionBeginEventAsync;
+        event AsyncEventHandler<PredictionEndEvent, UserSequencer> OnPredictionEndEventAsync;
+        event AsyncEventHandler<PredictionLockEvent, UserSequencer> OnPredictionLockEventAsync;
+        event AsyncEventHandler<PredictionProgressEvent, UserSequencer> OnPredictionProgressEventAsync;
+        event AsyncEventHandler<RaidEvent, UserSequencer> OnRaidEventAsync;
+        event AsyncEventHandler<string?, UserSequencer> OnRawMessageAsync;
+        event AsyncEventHandler<InvalidAccessTokenException, UserSequencer> OnRefreshTokenAsync;
+        event AsyncEventHandler<ShieldModeBeginEvent, UserSequencer> OnShieldModeBeginEventAsync;
+        event AsyncEventHandler<ShieldModeEndEvent, UserSequencer> OnShieldModeEndEventAsync;
+        event AsyncEventHandler<ShoutoutCreateEvent, UserSequencer> OnShoutoutCreateEventAsync;
+        event AsyncEventHandler<ShoutoutReceivedEvent, UserSequencer> OnShoutoutReceivedEventAsync;
+        event AsyncEventHandler<StreamOfflineEvent, UserSequencer> OnStreamOfflineEventAsync;
+        event AsyncEventHandler<StreamOnlineEvent, UserSequencer> OnStreamOnlineEventAsync;
+        event AsyncEventHandler<SubscribeEndEvent, UserSequencer> OnSubscribeEndEventAsync;
+        event AsyncEventHandler<SubscribeEvent, UserSequencer> OnSubscribeEventAsync;
+        event AsyncEventHandler<SubscriptionGiftEvent, UserSequencer> OnSubscriptionGiftEventAsync;
+        event AsyncEventHandler<SubscriptionMessageEvent, UserSequencer> OnSubscriptionMessageEventAsync;
+        event AsyncEventHandler<UnBanEvent, UserSequencer> OnUnBanEventAsync;
         event EventHandler<string?> OnUnexpectedConnectionTermination;
+        event AsyncEventHandler<UpdateNotificationEvent, UserSequencer> OnUpdateNotificationEventAsync;
 
-        event AsyncEventHandler<InvalidAccessTokenException> OnRefreshTokenAsync;
-
-        event AsyncEventHandler<UpdateNotificationEvent> OnUpdateNotificationEventAsync;
-
-        event AsyncEventHandler<FollowEvent> OnFollowEventAsync;
-
-        event AsyncEventHandler<ChannelChatMessage> OnChannelChatEventAsync;
-
-        event AsyncEventHandler<SubscribeEvent> OnSubscribeEventAsync;
-
-        event AsyncEventHandler<SubscribeEndEvent> OnSubscribeEndEventAsync;
-
-        event AsyncEventHandler<SubscriptionGiftEvent> OnSubscriptionGiftEventAsync;
-
-        event AsyncEventHandler<SubscriptionMessageEvent> OnSubscriptionMessageEventAsync;
-
-        event AsyncEventHandler<CheerEvent> OnCheerEventAsync;
-
-        event AsyncEventHandler<RaidEvent> OnRaidEventAsync;
-
-        event AsyncEventHandler<BanEvent> OnBanEventAsync;
-
-        event AsyncEventHandler<UnBanEvent> OnUnBanEventAsync;
-
-        event AsyncEventHandler<ModeratorAddEvent> OnModeratorAddEventAsync;
-
-        event AsyncEventHandler<ModeratorRemoveEvent> OnModeratorRemoveEventAsync;
-
-        event AsyncEventHandler<GuestStarSessionBeginEvent> OnGuestStarSessionBeginEventAsync;
-
-        event AsyncEventHandler<GuestStarSessionEndEvent> OnGuestStarSessionEndEventAsync;
-
-        event AsyncEventHandler<GuestStarGuestUpdateEvent> OnGuestStarGuestUpdateEventAsync;
-
-        event AsyncEventHandler<GuestStarSlotUpdateEvent> OnGuestStarSlotUpdateEventAsync;
-
-        event AsyncEventHandler<GuestStarSettingsUpdateEvent> OnGuestStarSettingsUpdateEventAsync;
-
-        event AsyncEventHandler<PointsCustomRewardAddEvent> OnPointsCustomRewardAddEventAsync;
-
-        event AsyncEventHandler<PointsCustomRewardUpdateEvent> OnPointsCustomRewardUpdateEventAsync;
-
-        event AsyncEventHandler<PointsCustomRewardRemoveEvent> OnPointsCustomRewardRemoveEventAsync;
-
-        event AsyncEventHandler<PointsCustomRewardRedemptionAddEvent> OnPointsCustomRewardRedemptionAddEventAsync;
-
-        event AsyncEventHandler<PointsCustomRewardRedemptionUpdateEvent> OnPointsCustomRewardRedemptionUpdateEventAsync;
-
-        event AsyncEventHandler<PollBeginEvent> OnPollBeginEventAsync;
-
-        event AsyncEventHandler<PollProgressEvent> OnPollProgressEventAsync;
-
-        event AsyncEventHandler<PollEndEvent> OnPollEndEventAsync;
-
-        event AsyncEventHandler<PredictionBeginEvent> OnPredictionBeginEventAsync;
-
-        event AsyncEventHandler<PredictionProgressEvent> OnPredictionProgressEventAsync;
-
-        event AsyncEventHandler<PredictionLockEvent> OnPredictionLockEventAsync;
-
-        event AsyncEventHandler<PredictionEndEvent> OnPredictionEndEventAsync;
-
-        event AsyncEventHandler<CharityDonationEvent> OnCharityDonationEventAsync;
-
-        event AsyncEventHandler<CharityCampaignStartEvent> OnCharityCampaignStartEventAsync;
-
-        event AsyncEventHandler<CharityCampaignProgressEvent> OnCharityCampaignProgressEventAsync;
-
-        event AsyncEventHandler<CharityCampaignStopEvent> OnCharityCampaignStopEventAsync;
-
-        event AsyncEventHandler<GoalBeginEvent> OnGoalBeginEventAsync;
-
-        event AsyncEventHandler<GoalProgressEvent> OnGoalProgressEventAsync;
-
-        event AsyncEventHandler<GoalEndEvent> OnGoalEndEventAsync;
-
-        event AsyncEventHandler<HypeTrainBeginEvent> OnHypeTrainBeginEventAsync;
-
-        event AsyncEventHandler<HypeTrainProgressEvent> OnHypeTrainProgressEventAsync;
-
-        event AsyncEventHandler<HypeTrainEndEvent> OnHypeTrainEndEventAsync;
-
-        event AsyncEventHandler<ShieldModeBeginEvent> OnShieldModeBeginEventAsync;
-
-        event AsyncEventHandler<ShieldModeEndEvent> OnShieldModeEndEventAsync;
-
-        event AsyncEventHandler<ShoutoutCreateEvent> OnShoutoutCreateEventAsync;
-
-        event AsyncEventHandler<ShoutoutReceivedEvent> OnShoutoutReceivedEventAsync;
-
-        event AsyncEventHandler<StreamOnlineEvent> OnStreamOnlineEventAsync;
-
-        event AsyncEventHandler<StreamOfflineEvent> OnStreamOfflineEventAsync;
-
-        /// <summary>
-        /// Initializes connection to event sub servers.
-        /// </summary>
-        /// <param name="clientId"></param>
-        /// <param name="userId"></param>
-        /// <param name="accessToken"></param>
-        /// <param name="listOfSubs"></param>
-        /// <returns></returns>
-        Task<bool> StartAsync(string clientId, string userId, string accessToken, List<SubscriptionType> listOfSubs);
-
-        /// <summary>
-        ///  Provides way to change clientId, accessToken or list of subs during run
-        /// </summary>
-        /// <param name="clientId"></param>
-        /// <param name="userId"></param>
-        /// <param name="accessToken"></param>
-        /// <param name="listOfSubs"></param>
-        /// <returns></returns>
-        Task UpdateOnFlyAsync(string clientId, string userId, string accessToken, List<SubscriptionType> listOfSubs);
-
-        /// <summary>
-        /// Disconnects client from servers and cleans up subscriptions
-        /// </summary>
-        /// <returns></returns>
-        Task StopAsync();
+        Task<bool> AddUserAsync(string userId, string accessToken, List<SubscriptionType> listOfSubs);
+        Task<bool> DeleteUserAsync(string userId);
+        bool UpdateUser(string userId, string accessToken, List<SubscriptionType> listOfSubs);
     }
 }
