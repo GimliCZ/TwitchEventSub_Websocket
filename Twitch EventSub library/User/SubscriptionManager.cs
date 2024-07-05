@@ -23,7 +23,7 @@ namespace Twitch.EventSub.User
                     reqSub.Type
                 }).Any(group => group.Count() > 1))
             {
-                throw new Exception("List contains dupes");
+                throw new Exception("[EventSubClient] - [SubscriptionManager] - List contains dupes");
             }
 
             //remove old connections, old sessions and all subscriptions with error status
@@ -35,7 +35,7 @@ namespace Twitch.EventSub.User
             //Yes we can get null from subscription function, if something goes horribly wrong.
             if (allSubscriptions == null)
             {
-                logger.LogInformation("[EventSubClient] - [EventSubscriptionManager] Subscription function returned null, skipping check");
+                logger.LogInformation("[EventSubClient] - [SubscriptionManager] Subscription function returned null, skipping check");
                 return false;
             }
             foreach (var getSubscriptionsResponse in allSubscriptions)
@@ -47,10 +47,10 @@ namespace Twitch.EventSub.User
                     {
                         if (!await ApiTryUnSubscribeAsync(clientId, accessToken, subscription.Id, userId, logger, clSource))
                         {
-                            logger.LogInformation("[EventSubClient] - [EventSubscriptionManager] Failed to unsubscribe during check" + subscription.Type);
+                            logger.LogInformation("[EventSubClient] - [SubscriptionManager] Failed to unsubscribe during check" + subscription.Type);
                             return false;
                         }
-                        logger.LogInformation("[EventSubClient] - [EventSubscriptionManager] Cleared subscription:" + subscription.Type);
+                        logger.LogInformation("[EventSubClient] - [SubscriptionManager] Cleared subscription:" + subscription.Type);
                     }
                 }
             }
@@ -60,7 +60,7 @@ namespace Twitch.EventSub.User
             //Yes we can get null from subscription function, if something goes horribly wrong.
             if (allSubscriptions == null)
             {
-                logger.LogInformation("Subscription function returned null, skipping check");
+                logger.LogInformation("[EventSubClient] - [SubscriptionManager] Subscription function returned null, skipping check");
                 return false;
             }
             foreach (var getSubscriptionsResponse in allSubscriptions)
@@ -85,10 +85,10 @@ namespace Twitch.EventSub.User
                     {
                         if (await ApiTryUnSubscribeAsync(clientId, accessToken, extraSubscription.Id, userId, logger, clSource))
                         {
-                            logger.LogInformation("[EventSubClient] - [EventSubscriptionManager] Failed to unsubscribe active subscription during check" + extraSubscription.Type);
+                            logger.LogInformation("[EventSubClient] - [SubscriptionManager] Failed to unsubscribe active subscription during check" + extraSubscription.Type);
                             return false;
                         }
-                        logger.LogInformation("[EventSubClient] - [EventSubscriptionManager] Removed extra sub: " + extraSubscription.Type);
+                        logger.LogInformation("[EventSubClient] - [SubscriptionManager] Removed extra sub: " + extraSubscription.Type);
                     }
                 }
 
@@ -99,10 +99,10 @@ namespace Twitch.EventSub.User
                     {
                         if (!await ApiTrySubscribeAsync(clientId, accessToken, missingSubscription, userId, logger, clSource))
                         {
-                            logger.LogInformation("[EventSubClient] - [EventSubscriptionManager] Failed to subscribe subscription during check");
+                            logger.LogInformation("[EventSubClient] - [SubscriptionManager] Failed to subscribe subscription during check");
                             return false;
                         }
-                        logger.LogInformation("[EventSubClient] - [EventSubscriptionManager] Added extra sub: " + missingSubscription.Type);
+                        logger.LogInformation("[EventSubClient] - [SubscriptionManager] Added extra sub: " + missingSubscription.Type);
                     }
                 }
             }
@@ -128,7 +128,7 @@ namespace Twitch.EventSub.User
             {
                 if (getSubscriptionsResponse is null || getSubscriptionsResponse.Data is null)
                 {
-                    logger.LogInformation("[EventSubClient] - [EventSubscriptionManager] Retrieved null Subscription Response");
+                    logger.LogInformation("[EventSubClient] - [SubscriptionManager] Retrieved null Subscription Response");
                     continue;
                 }
 
@@ -137,16 +137,16 @@ namespace Twitch.EventSub.User
 
                     if (subscription is null)
                     {
-                        logger.LogInformation("[EventSubClient] - [EventSubscriptionManager] Retrieved null Subscription");
+                        logger.LogInformation("[EventSubClient] - [SubscriptionManager] Retrieved null Subscription");
                         continue;
                     }
 
                     if (!await ApiTryUnSubscribeAsync(clientId, accessToken, subscription.Id, userId, logger, clSource))
                     {
-                        logger.LogWarningDetails("[EventSubClient] - [EventSubscriptionManager] Failed to unsubscribe during clear", subscription);
+                        logger.LogWarningDetails("[EventSubClient] - [SubscriptionManager] Failed to unsubscribe during clear", subscription);
                         continue;
                     }
-                    logger.LogInformation("[EventSubClient] - [EventSubscriptionManager] Sub cleared: " + subscription.Type);
+                    logger.LogInformation("[EventSubClient] - [SubscriptionManager] Sub cleared: " + subscription.Type);
                 }
             }
         }
@@ -189,7 +189,7 @@ namespace Twitch.EventSub.User
                 ex.SourceUserId = UserId;
                 //procedure must run UpdateOnFly function for proper change
                 await OnRefreshTokenRequestAsync.TryInvoke(this, ex);
-                logger.LogInformationDetails("[EventSubClient] - [EventSubscriptionManager] Invalid Access token detected, requesting change.", ex);
+                logger.LogInformationDetails("[EventSubClient] - [SubscriptionManager] Invalid Access token detected, requesting change.", ex);
             }
             catch (TaskCanceledException)
             {
@@ -197,10 +197,10 @@ namespace Twitch.EventSub.User
             }
             catch (Exception ex)
             {
-                logger.LogInformationDetails("[EventSubClient] - [EventSubscriptionManager] Api call failed due to:", ex);
+                logger.LogInformationDetails("[EventSubClient] - [SubscriptionManager] Api call failed due to:", ex);
             }
             //This is expected behavior. If we get null or false, we handle it in higher part of function
-            logger.LogWarningDetails("[EventSubClient] - [EventSubscriptionManager] Try Func Async returned Default value.", apiCallAction.Method.Name);
+            logger.LogWarningDetails("[EventSubClient] - [SubscriptionManager] Try Func Async returned Default value.", apiCallAction.Method.Name);
             return default;
         }
     }

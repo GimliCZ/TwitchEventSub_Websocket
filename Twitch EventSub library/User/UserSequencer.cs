@@ -80,7 +80,7 @@ namespace Twitch.EventSub.User
                 case UserState.InicialAccessTest:
                     await StateMachine.FireAsync(UserActions.AccessFailed);
                     break;
-                default: throw new InvalidOperationException("OnRefreshTokenRequestAsync went into unknown state");
+                default: throw new InvalidOperationException("[EventSubClient] - [UserSequencer] OnRefreshTokenRequestAsync went into unknown state");
             };
         }
 
@@ -96,7 +96,7 @@ namespace Twitch.EventSub.User
             }
             catch (Exception ex)
             {
-                _logger.LogErrorDetails("Welcome message didn't come in time.", Socket, DateTime.Now);
+                _logger.LogErrorDetails("[EventSubClient] - [UserSequencer] Welcome message didn't come in time.", Socket, DateTime.Now);
                 await StateMachine.FireAsync(UserActions.WelcomeMessageFail);
             }
         };
@@ -153,7 +153,7 @@ namespace Twitch.EventSub.User
         {
             if (Socket.IsRunning)
             {
-                _logger.LogInformation("[EventSubClient] - [EventSubSocketWrapper] Socket already active");
+                _logger.LogInformation("[EventSubClient] - [UserSequencer] Socket already active");
                 return;
             }
             Socket = new WebsocketClient(Url ?? new Uri(DefaultWebSocketUrl));
@@ -172,7 +172,7 @@ namespace Twitch.EventSub.User
 
         private async Task OnServerSideTerminationAsync(UserSequencer userSequencer, DisconnectionInfo disconnectInfo)
         {
-            _logger.LogErrorDetails("Socket Disconnected from outside", disconnectInfo);
+            _logger.LogErrorDetails("[EventSubClient] - [UserSequencer] Socket Disconnected from outside", disconnectInfo);
             await StateMachine.FireAsync(UserActions.WebsocketFail);
         }
 
@@ -197,7 +197,7 @@ namespace Twitch.EventSub.User
                 catch (JsonException ex)
                 {
                     // Log the parsing error and return immediately
-                    _logger.LogErrorDetails("[EventSubClient] - [EventSubSocketWrapper] Error while parsing WebSocket message: ", e, ex);
+                    _logger.LogErrorDetails("[EventSubClient] - [UserSequencer] Error while parsing WebSocket message: ", e, ex);
                     return Task.CompletedTask;
                 }
 
@@ -222,7 +222,7 @@ namespace Twitch.EventSub.User
             catch (Exception ex)
             {
                 // Catch any other unexpected exceptions and log them
-                _logger.LogErrorDetails("[EventSubClient] - [EventSubSocketWrapper] Unexpected error while processing WebSocket message: ", ex);
+                _logger.LogErrorDetails("[EventSubClient] - [UserSequencer] Unexpected error while processing WebSocket message: ", ex);
                 return Task.CompletedTask;
             }
         }
@@ -252,7 +252,7 @@ namespace Twitch.EventSub.User
                 {
                     var invalidToken = AccessToken;
                     await AccessTokenRequestedEvent.TryInvoke(this, LastAccessViolationException);
-                    _logger.LogErrorDetails("[EventSubClient] - [EventSubSocketWrapper] Directly edit current object AccessToken", LastAccessViolationException);
+                    _logger.LogErrorDetails("[EventSubClient] - [UserSequencer] Directly edit current object AccessToken", LastAccessViolationException);
                     var NewToken = AccessToken;
                     if (invalidToken == NewToken)
                     {
@@ -274,7 +274,7 @@ namespace Twitch.EventSub.User
                 }
                 else
                 {
-                    _logger.LogErrorDetails("[EventSubClient] - [EventSubSocketWrapper] Request for New Access token didnt contain valid exception", LastAccessViolationException);
+                    _logger.LogErrorDetails("[EventSubClient] - [UserSequencer] Request for New Access token didnt contain valid exception", LastAccessViolationException);
                     await StateMachine.FireAsync(UserActions.AwaitNewTokenFailed);
                 }
             }
@@ -285,11 +285,11 @@ namespace Twitch.EventSub.User
             if (message?.Payload?.Session?.Id != null)
             {
                 SessionId = message.Payload.Session.Id;
-                _logger.LogDebugDetails("[EventSubClient] - [EventSubSocketWrapper] Welcome message detected, Session captured", message, DateTime.Now);
+                _logger.LogDebugDetails("[EventSubClient] - [UserSequencer] Welcome message detected, Session captured", message, DateTime.Now);
             }
             else
             {
-                _logger.LogErrorDetails("[EventSubClient] - [EventSubSocketWrapper] Session key invalid", message, DateTime.Now);
+                _logger.LogErrorDetails("[EventSubClient] - [UserSequencer] Session key invalid", message, DateTime.Now);
             }
 
             // keep alive in sec + 10% tolerance
@@ -298,11 +298,11 @@ namespace Twitch.EventSub.User
                 var _keepAlive = (message.Payload.Session.KeepAliveTimeoutSeconds.Value * 1000 + 100);
                 _awaitMessage.Set();
                 _watchdog.Start(_keepAlive);
-                _logger.LogDebugDetails("[EventSubClient] - [EventSubSocketWrapper] Welcome message proccesed", message, DateTime.Now);
+                _logger.LogDebugDetails("[EventSubClient] - [UserSequencer] Welcome message proccesed", message, DateTime.Now);
             }
             else
             {
-                _logger.LogErrorDetails("[EventSubClient] - [EventSubSocketWrapper] Welcome message detected, but did not contain keep alive.", message, DateTime.Now);
+                _logger.LogErrorDetails("[EventSubClient] - [UserSequencer] Welcome message detected, but did not contain keep alive.", message, DateTime.Now);
             }
 
         }
@@ -312,7 +312,7 @@ namespace Twitch.EventSub.User
             _watchdog.Reset();
             if (message.Payload != null)
                 await OnNotificationMessageAsync.TryInvoke(this, message.Payload);
-            _logger.LogDebugDetails("[EventSubClient] - [EventSubSocketWrapper] Notification message detected", message, DateTime.Now);
+            _logger.LogDebugDetails("[EventSubClient] - [UserSequencer] Notification message detected", message, DateTime.Now);
         }
 
         private async Task ReconnectMessageProcessingAsync(WebSocketReconnectMessage message)
@@ -330,14 +330,14 @@ namespace Twitch.EventSub.User
                     Socket.DisconnectionHappened.Select(disconnectInfo => Observable.FromAsync(() => OnServerSideTerminationAsync(this, disconnectInfo))).Concat().Subscribe();
                     if (!Socket.IsRunning)
                     {
-                        _logger.LogInformationDetails("[EventSubClient] - [EventSubSocketWrapper] connection lost during reconnect", message, Socket);
+                        _logger.LogInformationDetails("[EventSubClient] - [UserSequencer] connection lost during reconnect", message, Socket);
                         await StateMachine.FireAsync(UserActions.ReconnectFail);
                         return;
                     }
                 }
                 else
                 {
-                    _logger.LogInformationDetails("[EventSubClient] - [EventSubSocketWrapper] Didn't recieve valid Url during Reconnect", message, Socket);
+                    _logger.LogInformationDetails("[EventSubClient] - [UserSequencer] Didn't recieve valid Url during Reconnect", message, Socket);
                     await StateMachine.FireAsync(UserActions.ReconnectFail);
                     return;
                 }
@@ -350,7 +350,7 @@ namespace Twitch.EventSub.User
             else
             {
                 _watchdog.Start(30);
-                _logger.LogInformationDetails("[EventSubClient] - [EventSubSocketWrapper] Reconnect keep alive value not provided, trying to insert 30s", message, Socket);
+                _logger.LogInformationDetails("[EventSubClient] - [UserSequencer] Reconnect keep alive value not provided, trying to insert 30s", message, Socket);
             }
 
             if (!string.IsNullOrEmpty(message?.Payload?.Session.Id))
@@ -359,7 +359,7 @@ namespace Twitch.EventSub.User
             }
             else
             {
-                _logger.LogInformationDetails("[EventSubClient] - [EventSubSocketWrapper] Provided invalid session. Terminiting", message, Socket);
+                _logger.LogInformationDetails("[EventSubClient] - [UserSequencer] Provided invalid session. Terminiting", message, Socket);
                 await StateMachine.FireAsync(UserActions.ReconnectFail);
             }
             await StateMachine.FireAsync(UserActions.ReconnectSuccess);
@@ -370,7 +370,7 @@ namespace Twitch.EventSub.User
 
             if (RequestedSubscriptions == null || ClientId == null || AccessToken == null)
             {
-                _logger.LogInformation("[EventSubClient] - [EventSubscriptionManager] Revocation Resolver got subscriptions, clientId or accessToken as Null");
+                _logger.LogInformation("[EventSubClient] - [SubscriptionManager] Revocation Resolver got subscriptions, clientId or accessToken as Null");
                 return;
             }
             foreach (var sub in RequestedSubscriptions.Where(sub => sub.Type == e?.Payload?.Type && sub.Version == e?.Payload?.Version))
@@ -379,13 +379,13 @@ namespace Twitch.EventSub.User
                 {
                     if (!await _subscriptionManager.ApiTrySubscribeAsync(ClientId, AccessToken, sub, UserIdInternal, _logger, cls))
                     {
-                        _logger.LogInformation("[EventSubClient] - [EventSubscriptionManager] Failed to subscribe subscription during revocation");
+                        _logger.LogInformation("[EventSubClient] - [SubscriptionManager] Failed to subscribe subscription during revocation");
                         return;
                     }
                 }
-                _logger.LogInformationDetails("[EventSubClient] - [EventSubscriptionManager] Refreshed sub due revocation: " + sub.Type + "caused by ", e);
+                _logger.LogInformationDetails("[EventSubClient] - [SubscriptionManager] Refreshed sub due revocation: " + sub.Type + "caused by ", e);
             }
-            _logger.LogDebugDetails("[EventSubClient] - [EventSubSocketWrapper] Revocation message detected", e);
+            _logger.LogDebugDetails("[EventSubClient] - [UserSequencer] Revocation message detected", e);
         }
 
         private Task PingMessageProcessingAsync()
@@ -397,14 +397,14 @@ namespace Twitch.EventSub.User
         private Task KeepAliveMessageProcessingAsync()
         {
             _watchdog.Reset();
-            _logger.LogDebugDetails("[EventSubClient] - [EventSubSocketWrapper] KeepAlive message detected", DateTime.Now);
+            _logger.LogDebugDetails("[EventSubClient] - [UserSequencer] KeepAlive message detected", DateTime.Now);
             return Task.CompletedTask;
         }
 
         private async Task OnWatchdogTimeoutAsync(object sender, string e)
         {
             await Socket.Stop(WebSocketCloseStatus.NormalClosure, "Server didn't respond in time");
-            _logger.LogWarningDetails("[EventSubClient] - [EventSubSocketWrapper] Server didn't respond in time", sender, e, DateTime.Now);
+            _logger.LogWarningDetails("[EventSubClient] - [UserSequencer] Server didn't respond in time", sender, e, DateTime.Now);
             if (OnOutsideDisconnectAsync != null)
             {
                 await OnOutsideDisconnectAsync.TryInvoke(this, e);

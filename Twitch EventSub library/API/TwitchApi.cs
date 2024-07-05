@@ -41,13 +41,13 @@ namespace Twitch.EventSub.API
                         case HttpStatusCode.Forbidden:
                             throw new Exception("Subscribe - Invalid Scopes");
                         default:
-                            logger.LogWarningDetails("[EventSubClient] - [TwitchPartialApi] - Subscribe got non-standard status code", requestBody, content, response);
+                            logger.LogWarningDetails("[EventSubClient] - [TwitchApi] - Subscribe got non-standard status code", requestBody, content, response);
                             return false;
                     }
                 }
                 catch (HttpRequestException ex)
                 {
-                    logger.LogErrorDetails($"[EventSubClient] - [TwitchPartialApi] - SubscribeAsync returned exception", ex, request);
+                    logger.LogErrorDetails($"[EventSubClient] - [TwitchApi] - SubscribeAsync returned exception", ex, request);
                     return false;
                 }
             }
@@ -77,13 +77,13 @@ namespace Twitch.EventSub.API
                         case HttpStatusCode.Unauthorized:
                             throw new InvalidAccessTokenException("Unsubscribe failed due" + await response.Content.ReadAsStringAsync(clSource.Token) + response.ReasonPhrase);
                         default:
-                            logger.LogWarningDetails("[EventSubClient] - [TwitchPartialApi] - UnSubscribeAsync got non-standard status code:", response);
+                            logger.LogWarningDetails("[EventSubClient] - [TwitchApi] - UnSubscribeAsync got non-standard status code:", response);
                             return false;
                     };
                 }
                 catch (HttpRequestException ex)
                 {
-                    logger.LogErrorDetails($"[EventSubClient] - [TwitchPartialApi] - UnsubscribeAsync returned exception", ex);
+                    logger.LogErrorDetails($"[EventSubClient] - [TwitchApi] - UnsubscribeAsync returned exception", ex);
                     return false;
                 }
             }
@@ -128,13 +128,13 @@ namespace Twitch.EventSub.API
                         case HttpStatusCode.OK: return JsonConvert.DeserializeObject<GetSubscriptionsResponse>(body);
                         case HttpStatusCode.Unauthorized: throw new InvalidAccessTokenException("GetSubscriptions failed due" + body + response.ReasonPhrase);
                         default:
-                            logger.LogWarningDetails("[EventSubClient] - [TwitchPartialApi] - GetSubscriptions got non-standard status code", queryBuilder, response);
+                            logger.LogWarningDetails("[EventSubClient] - [TwitchApi] - GetSubscriptions got non-standard status code", queryBuilder, response);
                             return default;
                     }
                 }
                 catch (HttpRequestException ex)
                 {
-                    logger.LogErrorDetails($"[EventSubClient] - [TwitchPartialApi] - GetSubscriptions returned exception", ex, status);
+                    logger.LogErrorDetails($"[EventSubClient] - [TwitchApi] - GetSubscriptions returned exception", ex, status);
                     return default;
                 }
             }
@@ -167,7 +167,7 @@ namespace Twitch.EventSub.API
                 }
                 else
                 {
-                    logger.LogInformation("[EventSubClient] - [TwitchPartialApi] Response returned null cause of invalid userId or filter parameter");
+                    logger.LogInformation("[EventSubClient] - [TwitchApi] Response returned null cause of invalid userId or filter parameter");
                     break;
                 }
 
@@ -178,7 +178,7 @@ namespace Twitch.EventSub.API
             }
             if (allSubscriptions.Count == 0)
             {
-                logger.LogInformation("[EventSubClient] - [TwitchPartialApi] List of subscriptions returned EMPTY!");
+                logger.LogInformation("[EventSubClient] - [TwitchApi] List of subscriptions returned EMPTY!");
             }
 
             return allSubscriptions;
@@ -207,15 +207,15 @@ namespace Twitch.EventSub.API
                             return true;
                         case System.Net.HttpStatusCode.Unauthorized:
                             var errorMessage = await response.Content.ReadAsStringAsync(clSource.Token);
-                            throw new InvalidAccessTokenException($"ValidateToken failed: {errorMessage} {response.ReasonPhrase}");
+                            throw new InvalidAccessTokenException($"[EventSubClient] - [TwitchApi] Validation of token failed: {errorMessage} {response.ReasonPhrase}");
                         default:
-                            logger.LogWarning("ValidateToken got non-standard status code: {StatusCode}", response.StatusCode);
+                            logger.LogWarning("[EventSubClient] - [TwitchApi] ValidateTokenAsync got non-standard status code: {StatusCode}", response.StatusCode);
                             return false;
                     }
                 }
                 catch (HttpRequestException ex)
                 {
-                    logger.LogError(ex, "ValidateTokenAsync encountered an exception.");
+                    logger.LogError(ex, "[EventSubClient] - [TwitchApi] ValidateTokenAsync encountered an exception.");
                     return false;
                 }
             }
