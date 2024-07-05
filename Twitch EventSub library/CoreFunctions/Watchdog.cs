@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Twitch.EventSub.Library.CoreFunctions;
 
 namespace Twitch.EventSub.CoreFunctions
 {

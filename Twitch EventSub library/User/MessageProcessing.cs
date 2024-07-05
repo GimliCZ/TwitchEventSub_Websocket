@@ -1,6 +1,5 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Twitch.EventSub.Library.Messages.NotificationMessage.Events;
 using Twitch.EventSub.Messages;
 using Twitch.EventSub.Messages.KeepAliveMessage;
 using Twitch.EventSub.Messages.NotificationMessage;

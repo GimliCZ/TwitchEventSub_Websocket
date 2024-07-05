@@ -2,7 +2,6 @@
 using Twitch.EventSub.API;
 using Twitch.EventSub.API.Models;
 using Twitch.EventSub.CoreFunctions;
-using Twitch.EventSub.Library.CoreFunctions;
 
 namespace Twitch.EventSub.User
 {

@@ -1,6 +1,4 @@
-﻿using Twitch.EventSub.CoreFunctions;
-
-namespace Twitch.EventSub.Library.CoreFunctions
+﻿namespace Twitch.EventSub.CoreFunctions
 {
     public static class EventInvocationExtensions
     {

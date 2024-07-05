@@ -6,7 +6,6 @@ using Newtonsoft.Json;
 using Twitch.EventSub.API;
 using Twitch.EventSub.API.Models;
 using Twitch.EventSub.CoreFunctions;
-using Twitch.EventSub.Library.CoreFunctions;
 using Twitch.EventSub.Messages;
 using Twitch.EventSub.Messages.KeepAliveMessage;
 using Twitch.EventSub.Messages.NotificationMessage;
@@ -30,7 +29,7 @@ namespace Twitch.EventSub.User
         public event AsyncEventHandler<WebSocketNotificationPayload, UserSequencer> OnNotificationMessageAsync;
         public event AsyncEventHandler<string?, UserSequencer> OnOutsideDisconnectAsync;
         public event AsyncEventHandler<InvalidAccessTokenException, UserSequencer> AccessTokenRequestedEvent;
-        public UserSequencer(string id, string access, List<CreateSubscriptionRequest> requestedSubscriptions,string clientId, ILogger logger) : base(id, access, requestedSubscriptions)
+        public UserSequencer(string id, string access, List<CreateSubscriptionRequest> requestedSubscriptions, string clientId, ILogger logger) : base(id, access, requestedSubscriptions)
         {
             _logger = logger;
             ClientId = clientId;

@@ -1,7 +1,6 @@
 ﻿using Newtonsoft.Json;
-using Twitch.EventSub.Messages.NotificationMessage;
 
-namespace Twitch.EventSub.Library.Messages.NotificationMessage.Events
+namespace Twitch.EventSub.Messages.NotificationMessage.Events
 {
     public class HypeTrainBeginEvent : WebSocketNotificationEvent
     {

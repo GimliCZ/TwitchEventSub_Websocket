@@ -1,6 +1,5 @@
 ﻿using Twitch.EventSub.API.Models;
 using Twitch.EventSub.CoreFunctions;
-using Twitch.EventSub.Library.Messages.NotificationMessage.Events;
 using Twitch.EventSub.Messages.NotificationMessage.Events;
 using Twitch.EventSub.User;
 
