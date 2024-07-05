@@ -1,4 +1,5 @@
-﻿using Twitch.EventSub.API.Models;
+﻿using Stateless;
+using Twitch.EventSub.API.Models;
 using Websocket.Client;
 
 namespace Twitch.EventSub.User
@@ -21,7 +22,6 @@ namespace Twitch.EventSub.User
 
         public List<CreateSubscriptionRequest> RequestedSubscriptions;
         public InvalidAccessTokenException? LastAccessViolationException { get; set; }
-
         public UserBase(string id, string access, List<CreateSubscriptionRequest> requestedSubscriptions)
         {
             State = UserState.Registred;
@@ -32,6 +32,11 @@ namespace Twitch.EventSub.User
             StateMachineCofiguration(StateMachine);
             ManagerCancelationSource = new CancellationTokenSource();
             RequestedSubscriptions = requestedSubscriptions;
+        }
+
+        public bool IsDisposed()
+        {
+            return StateMachine.State == UserState.Disposed;
         }
         public async Task StartAsync()
         {
@@ -49,6 +54,10 @@ namespace Twitch.EventSub.User
         }
         public async Task<bool> StopAsync()
         {
+            if (StateMachine.State == UserState.Disposed)
+            {
+                return true;
+            }
             if (StateMachine.CanFire(UserActions.Stop))
             {
                 await StateMachine.FireAsync(UserActions.Stop);
@@ -185,8 +194,7 @@ namespace Twitch.EventSub.User
         }
 
         protected abstract Task AwaitManagerAsync();
-
-        protected abstract Task StopManagerAsync();
+        
         protected abstract Task AwaitWelcomeMessageAsync();
         protected abstract Task InicialAccessTokenAsync();
         protected abstract Task NewAccessTokenRequestAsync();

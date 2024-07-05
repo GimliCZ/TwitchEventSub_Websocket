@@ -11,7 +11,7 @@ namespace Twitch.EventSub
         private readonly ILogger _logger;
         private readonly string _clientId;
         public IEventProvider? this[string key] => GetUserEventProvider(key);
-        private ConcurrentDictionary<string, EventProvider> _eventDictionary;
+        private readonly ConcurrentDictionary<string, EventProvider> _eventDictionary;
 
         public EventSubClient(string clientId, ILogger<EventSubClient> logger)
         {

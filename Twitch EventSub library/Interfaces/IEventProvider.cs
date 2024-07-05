@@ -57,7 +57,8 @@ namespace Twitch.EventSub.Interfaces
         event AsyncEventHandler<UpdateNotificationEvent> OnUpdateNotificationEventAsync;
 
         Task StartAsync();
-        Task StopAsync();
+        Task <bool> StopAsync();
+        bool IsDisposed();
         bool Update(string accessToken, List<SubscriptionType> listOfSubs);
     }
 }

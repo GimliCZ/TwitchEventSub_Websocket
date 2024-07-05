@@ -82,29 +82,33 @@ namespace Twitch.EventSub.User
             ArgumentNullException.ThrowIfNull(listOfSubs, nameof(listOfSubs));
             ArgumentNullException.ThrowIfNull(logger, nameof(logger));
 
-            var _listOfSubs = new List<CreateSubscriptionRequest>();
+            var listOfRequests = new List<CreateSubscriptionRequest>();
             foreach (var type in listOfSubs)
             {
-                _listOfSubs.Add(new CreateSubscriptionRequest()
+                listOfRequests.Add(new CreateSubscriptionRequest()
                 {
                     Transport = new Transport() { Method = "websocket" },
                     Condition = new Condition()
                 }.SetSubscriptionType(type, userId));
             }
-            _userSequencer = new UserSequencer(userId, accessToken, _listOfSubs, clientId, logger);
+            _userSequencer = new UserSequencer(userId, accessToken, listOfRequests, clientId, logger);
 
             _userSequencer.AccessTokenRequestedEvent += AccessTokenRequestedEventAsync;
-            _userSequencer.OnRawMessageRecievedAsync += OnRawMessageRecievedAsync;
+            _userSequencer.OnRawMessageRecievedAsync += OnRawMessageReceivedAsync;
             _userSequencer.OnOutsideDisconnectAsync += OnOutsideDisconnectAsync;
             _userSequencer.OnNotificationMessageAsync += Sequencer_OnNotificationMessageAsync;
         }
 
+        public bool IsDisposed()
+        {
+            return _userSequencer.IsDisposed();
+        }
         public Task StartAsync()
         {
             return _userSequencer.StartAsync();
         }
 
-        public Task StopAsync()
+        public Task<bool> StopAsync()
         {
             return _userSequencer.StopAsync();
         }
@@ -114,17 +118,17 @@ namespace Twitch.EventSub.User
             ArgumentException.ThrowIfNullOrWhiteSpace(accessToken, nameof(accessToken));
             ArgumentNullException.ThrowIfNull(listOfSubs, nameof(listOfSubs));
 
-            var _listOfSubs = new List<CreateSubscriptionRequest>();
+            var listOfRequests = new List<CreateSubscriptionRequest>();
             foreach (var type in listOfSubs)
             {
-                _listOfSubs.Add(new CreateSubscriptionRequest()
+                listOfRequests.Add(new CreateSubscriptionRequest()
                 {
                     Transport = new Transport() { Method = "websocket" },
                     Condition = new Condition()
                 }.SetSubscriptionType(type, _userSequencer.UserId));
             }
 
-            return _userSequencer.Update(accessToken, _listOfSubs);
+            return _userSequencer.Update(accessToken, listOfRequests);
         }
 
 
@@ -135,7 +139,7 @@ namespace Twitch.EventSub.User
         }
 
 
-        private async Task OnRawMessageRecievedAsync(object sender, string? e)
+        private async Task OnRawMessageReceivedAsync(object sender, string? e)
         {
             await OnRawMessageAsync.TryInvoke(sender, e);
         }

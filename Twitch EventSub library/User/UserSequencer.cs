@@ -143,7 +143,7 @@ namespace Twitch.EventSub.User
             }
         }
 
-        protected override async Task StopManagerAsync()
+        protected async Task StopManagerAsync()
         {
             await ManagerCancelationSource.CancelAsync();
         }
@@ -418,6 +418,7 @@ namespace Twitch.EventSub.User
 
         protected override async Task StopProcedureAsync()
         {
+            await StopManagerAsync();
             using (var cls = new CancellationTokenSource(1000))
             {
                 await _subscriptionManager.ClearAsync(ClientId, AccessToken, UserId, _logger, cls);
