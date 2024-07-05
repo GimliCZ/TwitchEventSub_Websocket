@@ -1,5 +1,4 @@
-﻿using System.Collections.Concurrent;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Twitch.EventSub.API.Extensions;
 using Twitch.EventSub.API.Models;
 using Twitch.EventSub.CoreFunctions;
@@ -8,80 +7,81 @@ using Twitch.EventSub.Messages.NotificationMessage.Events;
 
 namespace Twitch.EventSub.User
 {
-    public class EventSubClient : IEventSubClient
+    public class EventProvider : IEventProvider
     {
-        private readonly ILogger _logger;
-        private string _clientId;
-        private ConcurrentDictionary<string, UserSequencer> _userDictionary;
-
-        public event EventHandler<string?> OnUnexpectedConnectionTermination;
-        public event AsyncEventHandler<InvalidAccessTokenException, UserSequencer> OnRefreshTokenAsync;
-        public event AsyncEventHandler<string?, UserSequencer> OnRawMessageAsync;
+        private readonly UserSequencer _userSequencer;
 
         #region Available events
-
-        public event AsyncEventHandler<UpdateNotificationEvent, UserSequencer> OnUpdateNotificationEventAsync;
-        public event AsyncEventHandler<FollowEvent, UserSequencer> OnFollowEventAsync;
-        public event AsyncEventHandler<ChannelChatMessage, UserSequencer> OnChannelChatEventAsync;
-        public event AsyncEventHandler<SubscribeEvent, UserSequencer> OnSubscribeEventAsync;
-        public event AsyncEventHandler<SubscribeEndEvent, UserSequencer> OnSubscribeEndEventAsync;
-        public event AsyncEventHandler<SubscriptionGiftEvent, UserSequencer> OnSubscriptionGiftEventAsync;
-        public event AsyncEventHandler<SubscriptionMessageEvent, UserSequencer> OnSubscriptionMessageEventAsync;
-        public event AsyncEventHandler<CheerEvent, UserSequencer> OnCheerEventAsync;
-        public event AsyncEventHandler<RaidEvent, UserSequencer> OnRaidEventAsync;
-        public event AsyncEventHandler<BanEvent, UserSequencer> OnBanEventAsync;
-        public event AsyncEventHandler<UnBanEvent, UserSequencer> OnUnBanEventAsync;
-        public event AsyncEventHandler<ModeratorAddEvent, UserSequencer> OnModeratorAddEventAsync;
-        public event AsyncEventHandler<ModeratorRemoveEvent, UserSequencer> OnModeratorRemoveEventAsync;
-        public event AsyncEventHandler<GuestStarSessionBeginEvent, UserSequencer> OnGuestStarSessionBeginEventAsync;
-        public event AsyncEventHandler<GuestStarSessionEndEvent, UserSequencer> OnGuestStarSessionEndEventAsync;
-        public event AsyncEventHandler<GuestStarGuestUpdateEvent, UserSequencer> OnGuestStarGuestUpdateEventAsync;
-        public event AsyncEventHandler<GuestStarSlotUpdateEvent, UserSequencer> OnGuestStarSlotUpdateEventAsync;
-        public event AsyncEventHandler<GuestStarSettingsUpdateEvent, UserSequencer> OnGuestStarSettingsUpdateEventAsync;
-        public event AsyncEventHandler<PointsCustomRewardAddEvent, UserSequencer> OnPointsCustomRewardAddEventAsync;
-        public event AsyncEventHandler<PointsCustomRewardUpdateEvent, UserSequencer> OnPointsCustomRewardUpdateEventAsync;
-        public event AsyncEventHandler<PointsCustomRewardRemoveEvent, UserSequencer> OnPointsCustomRewardRemoveEventAsync;
-        public event AsyncEventHandler<PointsCustomRewardRedemptionAddEvent, UserSequencer> OnPointsCustomRewardRedemptionAddEventAsync;
-        public event AsyncEventHandler<PointsCustomRewardRedemptionUpdateEvent, UserSequencer> OnPointsCustomRewardRedemptionUpdateEventAsync;
-        public event AsyncEventHandler<PollBeginEvent, UserSequencer> OnPollBeginEventAsync;
-        public event AsyncEventHandler<PollProgressEvent, UserSequencer> OnPollProgressEventAsync;
-        public event AsyncEventHandler<PollEndEvent, UserSequencer> OnPollEndEventAsync;
-        public event AsyncEventHandler<PredictionBeginEvent, UserSequencer> OnPredictionBeginEventAsync;
-        public event AsyncEventHandler<PredictionProgressEvent, UserSequencer> OnPredictionProgressEventAsync;
-        public event AsyncEventHandler<PredictionLockEvent, UserSequencer> OnPredictionLockEventAsync;
-        public event AsyncEventHandler<PredictionEndEvent, UserSequencer> OnPredictionEndEventAsync;
-        public event AsyncEventHandler<CharityDonationEvent, UserSequencer> OnCharityDonationEventAsync;
-        public event AsyncEventHandler<CharityCampaignStartEvent, UserSequencer> OnCharityCampaignStartEventAsync;
-        public event AsyncEventHandler<CharityCampaignProgressEvent, UserSequencer> OnCharityCampaignProgressEventAsync;
-        public event AsyncEventHandler<CharityCampaignStopEvent, UserSequencer> OnCharityCampaignStopEventAsync;
+        public event AsyncEventHandler<UpdateNotificationEvent> OnUpdateNotificationEventAsync;
+        public event AsyncEventHandler<FollowEvent> OnFollowEventAsync;
+        public event AsyncEventHandler<ChannelChatMessage> OnChannelChatEventAsync;
+        public event AsyncEventHandler<SubscribeEvent> OnSubscribeEventAsync;
+        public event AsyncEventHandler<SubscribeEndEvent> OnSubscribeEndEventAsync;
+        public event AsyncEventHandler<SubscriptionGiftEvent> OnSubscriptionGiftEventAsync;
+        public event AsyncEventHandler<SubscriptionMessageEvent> OnSubscriptionMessageEventAsync;
+        public event AsyncEventHandler<CheerEvent> OnCheerEventAsync;
+        public event AsyncEventHandler<RaidEvent> OnRaidEventAsync;
+        public event AsyncEventHandler<BanEvent> OnBanEventAsync;
+        public event AsyncEventHandler<UnBanEvent> OnUnBanEventAsync;
+        public event AsyncEventHandler<ModeratorAddEvent> OnModeratorAddEventAsync;
+        public event AsyncEventHandler<ModeratorRemoveEvent> OnModeratorRemoveEventAsync;
+        public event AsyncEventHandler<GuestStarSessionBeginEvent> OnGuestStarSessionBeginEventAsync;
+        public event AsyncEventHandler<GuestStarSessionEndEvent> OnGuestStarSessionEndEventAsync;
+        public event AsyncEventHandler<GuestStarGuestUpdateEvent> OnGuestStarGuestUpdateEventAsync;
+        public event AsyncEventHandler<GuestStarSlotUpdateEvent> OnGuestStarSlotUpdateEventAsync;
+        public event AsyncEventHandler<GuestStarSettingsUpdateEvent> OnGuestStarSettingsUpdateEventAsync;
+        public event AsyncEventHandler<PointsCustomRewardAddEvent> OnPointsCustomRewardAddEventAsync;
+        public event AsyncEventHandler<PointsCustomRewardUpdateEvent> OnPointsCustomRewardUpdateEventAsync;
+        public event AsyncEventHandler<PointsCustomRewardRemoveEvent> OnPointsCustomRewardRemoveEventAsync;
+        public event AsyncEventHandler<PointsCustomRewardRedemptionAddEvent> OnPointsCustomRewardRedemptionAddEventAsync;
+        public event AsyncEventHandler<PointsCustomRewardRedemptionUpdateEvent> OnPointsCustomRewardRedemptionUpdateEventAsync;
+        public event AsyncEventHandler<PollBeginEvent> OnPollBeginEventAsync;
+        public event AsyncEventHandler<PollProgressEvent> OnPollProgressEventAsync;
+        public event AsyncEventHandler<PollEndEvent> OnPollEndEventAsync;
+        public event AsyncEventHandler<PredictionBeginEvent> OnPredictionBeginEventAsync;
+        public event AsyncEventHandler<PredictionProgressEvent> OnPredictionProgressEventAsync;
+        public event AsyncEventHandler<PredictionLockEvent> OnPredictionLockEventAsync;
+        public event AsyncEventHandler<PredictionEndEvent> OnPredictionEndEventAsync;
+        public event AsyncEventHandler<CharityDonationEvent> OnCharityDonationEventAsync;
+        public event AsyncEventHandler<CharityCampaignStartEvent> OnCharityCampaignStartEventAsync;
+        public event AsyncEventHandler<CharityCampaignProgressEvent> OnCharityCampaignProgressEventAsync;
+        public event AsyncEventHandler<CharityCampaignStopEvent> OnCharityCampaignStopEventAsync;
         //public event AsyncEventHandler<DropEntitlementGrantEvent> OnDropEntitlementGrantEventAsync;
         //public event AsyncEventHandler<ExtensionBitsTransactionCreateEvent> OnExtensionBitsTransactionCreateEventAsync;
-        public event AsyncEventHandler<GoalBeginEvent, UserSequencer> OnGoalBeginEventAsync;
-        public event AsyncEventHandler<GoalProgressEvent, UserSequencer> OnGoalProgressEventAsync;
-        public event AsyncEventHandler<GoalEndEvent, UserSequencer> OnGoalEndEventAsync;
-        public event AsyncEventHandler<HypeTrainBeginEvent, UserSequencer> OnHypeTrainBeginEventAsync;
-        public event AsyncEventHandler<HypeTrainProgressEvent, UserSequencer> OnHypeTrainProgressEventAsync;
-        public event AsyncEventHandler<HypeTrainEndEvent, UserSequencer> OnHypeTrainEndEventAsync;
-        public event AsyncEventHandler<ShieldModeBeginEvent, UserSequencer> OnShieldModeBeginEventAsync;
-        public event AsyncEventHandler<ShieldModeEndEvent, UserSequencer> OnShieldModeEndEventAsync;
-        public event AsyncEventHandler<ShoutoutCreateEvent, UserSequencer> OnShoutoutCreateEventAsync;
-        public event AsyncEventHandler<ShoutoutReceivedEvent, UserSequencer> OnShoutoutReceivedEventAsync;
-        public event AsyncEventHandler<StreamOnlineEvent, UserSequencer> OnStreamOnlineEventAsync;
-        public event AsyncEventHandler<StreamOfflineEvent, UserSequencer> OnStreamOfflineEventAsync;
+        public event AsyncEventHandler<GoalBeginEvent> OnGoalBeginEventAsync;
+        public event AsyncEventHandler<GoalProgressEvent> OnGoalProgressEventAsync;
+        public event AsyncEventHandler<GoalEndEvent> OnGoalEndEventAsync;
+        public event AsyncEventHandler<HypeTrainBeginEvent> OnHypeTrainBeginEventAsync;
+        public event AsyncEventHandler<HypeTrainProgressEvent> OnHypeTrainProgressEventAsync;
+        public event AsyncEventHandler<HypeTrainEndEvent> OnHypeTrainEndEventAsync;
+        public event AsyncEventHandler<ShieldModeBeginEvent> OnShieldModeBeginEventAsync;
+        public event AsyncEventHandler<ShieldModeEndEvent> OnShieldModeEndEventAsync;
+        public event AsyncEventHandler<ShoutoutCreateEvent> OnShoutoutCreateEventAsync;
+        public event AsyncEventHandler<ShoutoutReceivedEvent> OnShoutoutReceivedEventAsync;
+        public event AsyncEventHandler<StreamOnlineEvent> OnStreamOnlineEventAsync;
+        public event AsyncEventHandler<StreamOfflineEvent> OnStreamOfflineEventAsync;
         //public event AsyncEventHandler<UserAuthorizationGrantEvent> OnUserAuthorizationGrantEventAsync;
         //public event AsyncEventHandler<UserAuthorizationRevokeEvent> OnUserAuthorizationRevokeEventAsync;
         //public event AsyncEventHandler<UserUpdateEvent> OnUserUpdateEventAsync;
-
         #endregion
 
-        public EventSubClient(string clientId, ILogger<EventSubClient> logger)
+        public event EventHandler<string?> OnUnexpectedConnectionTermination;
+        public event AsyncEventHandler<InvalidAccessTokenException> OnRefreshTokenAsync;
+        public event AsyncEventHandler<string?> OnRawMessageAsync;
+
+        public EventProvider(
+            string userId,
+            string accessToken,
+            List<SubscriptionType> listOfSubs,
+            string clientId,
+            ILogger logger)
         {
-            _clientId = clientId;
-            _userDictionary = new ConcurrentDictionary<string, UserSequencer>();
-            _logger = logger;
-        }
-        public async Task<bool> AddUserAsync(string userId, string accessToken, List<SubscriptionType> listOfSubs)
-        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(userId, nameof(userId));
+            ArgumentException.ThrowIfNullOrWhiteSpace(accessToken, nameof(accessToken));
+            ArgumentException.ThrowIfNullOrWhiteSpace(clientId, nameof(clientId));
+            ArgumentNullException.ThrowIfNull(listOfSubs, nameof(listOfSubs));
+            ArgumentNullException.ThrowIfNull(logger, nameof(logger));
+
             var _listOfSubs = new List<CreateSubscriptionRequest>();
             foreach (var type in listOfSubs)
             {
@@ -91,28 +91,62 @@ namespace Twitch.EventSub.User
                     Condition = new Condition()
                 }.SetSubscriptionType(type, userId));
             }
-            var sequencer = new UserSequencer(userId, accessToken, _listOfSubs, _clientId, _logger);
+            _userSequencer = new UserSequencer(userId, accessToken, _listOfSubs, clientId, logger);
 
-            sequencer.AccessTokenRequestedEvent += Sequencer_AccessTokenRequestedEvent;
-            sequencer.OnRawMessageRecievedAsync += Sequencer_OnRawMessageRecievedAsync;
-            sequencer.OnNotificationMessageAsync += Sequencer_OnNotificationMessageAsync;
-            sequencer.OnOutsideDisconnectAsync += Sequencer_OnOutsideDisconnectAsync;
-
-            if (_userDictionary.TryAdd(userId, sequencer))
-            {
-                await _userDictionary[userId].StartAsync();
-                return true;
-            }
-            return false;
+            _userSequencer.AccessTokenRequestedEvent += AccessTokenRequestedEventAsync;
+            _userSequencer.OnRawMessageRecievedAsync += OnRawMessageRecievedAsync;
+            _userSequencer.OnOutsideDisconnectAsync += OnOutsideDisconnectAsync;
+            _userSequencer.OnNotificationMessageAsync += Sequencer_OnNotificationMessageAsync;
         }
 
-        private Task Sequencer_OnOutsideDisconnectAsync(UserSequencer sender, string? e)
+        public Task StartAsync()
+        {
+            return _userSequencer.StartAsync();
+        }
+
+        public Task StopAsync()
+        {
+            return _userSequencer.StopAsync();
+        }
+
+        public bool Update(string accessToken, List<SubscriptionType> listOfSubs)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(accessToken, nameof(accessToken));
+            ArgumentNullException.ThrowIfNull(listOfSubs, nameof(listOfSubs));
+
+            var _listOfSubs = new List<CreateSubscriptionRequest>();
+            foreach (var type in listOfSubs)
+            {
+                _listOfSubs.Add(new CreateSubscriptionRequest()
+                {
+                    Transport = new Transport() { Method = "websocket" },
+                    Condition = new Condition()
+                }.SetSubscriptionType(type, _userSequencer.UserId));
+            }
+
+            return _userSequencer.Update(accessToken, _listOfSubs);
+        }
+
+
+        private Task OnOutsideDisconnectAsync(object sender, string? e)
         {
             OnUnexpectedConnectionTermination.Invoke(sender, e);
             return Task.CompletedTask;
         }
 
-        private async Task Sequencer_OnNotificationMessageAsync(UserSequencer sender, Messages.NotificationMessage.WebSocketNotificationPayload e)
+
+        private async Task OnRawMessageRecievedAsync(object sender, string? e)
+        {
+            await OnRawMessageAsync.TryInvoke(sender, e);
+        }
+
+        private async Task AccessTokenRequestedEventAsync(object sender, InvalidAccessTokenException e)
+        {
+            await OnRefreshTokenAsync.TryInvoke(sender, e);
+        }
+
+
+        private async Task Sequencer_OnNotificationMessageAsync(object sender, Messages.NotificationMessage.WebSocketNotificationPayload e)
         {
             switch (e.Event)
             {
@@ -331,50 +365,6 @@ namespace Twitch.EventSub.User
                 default:
                     throw new NotImplementedException();
             }
-        }
-
-        private async Task Sequencer_OnRawMessageRecievedAsync(UserSequencer sender, string? e)
-        {
-            await OnRawMessageAsync.TryInvoke(sender, e);
-        }
-
-        private async Task Sequencer_AccessTokenRequestedEvent(UserSequencer sender, InvalidAccessTokenException e)
-        {
-            await OnRefreshTokenAsync.TryInvoke(sender, e);
-        }
-
-        public bool UpdateUser(string userId, string accessToken, List<SubscriptionType> listOfSubs)
-        {
-            var _listOfSubs = new List<CreateSubscriptionRequest>();
-            foreach (var type in listOfSubs)
-            {
-                _listOfSubs.Add(new CreateSubscriptionRequest()
-                {
-                    Transport = new Transport() { Method = "websocket" },
-                    Condition = new Condition()
-                }.SetSubscriptionType(type, userId));
-            }
-
-            if (_userDictionary.TryGetValue(userId, out var sequencerold))
-            {
-                return sequencerold.Update(userId, accessToken, _listOfSubs);
-            }
-            else
-            {
-                return false;
-            }
-        }
-        public async Task<bool> DeleteUserAsync(string userId)
-        {
-            if (_userDictionary.TryGetValue(userId, out var sequencer))
-            {
-                await sequencer.StopAsync();
-                if (_userDictionary.TryRemove(userId, out _))
-                {
-                    return true;
-                }
-            }
-            return false;
         }
     }
 }

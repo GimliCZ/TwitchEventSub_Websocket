@@ -25,10 +25,10 @@ namespace Twitch.EventSub.User
         private AsyncAutoResetEvent _awaitMessage = new(false);
         private SubscriptionManager _subscriptionManager;
 
-        public event AsyncEventHandler<string?, UserSequencer> OnRawMessageRecievedAsync;
-        public event AsyncEventHandler<WebSocketNotificationPayload, UserSequencer> OnNotificationMessageAsync;
-        public event AsyncEventHandler<string?, UserSequencer> OnOutsideDisconnectAsync;
-        public event AsyncEventHandler<InvalidAccessTokenException, UserSequencer> AccessTokenRequestedEvent;
+        public event CoreFunctions.AsyncEventHandler<string?> OnRawMessageRecievedAsync;
+        public event CoreFunctions.AsyncEventHandler<string?> OnOutsideDisconnectAsync;
+        public event CoreFunctions.AsyncEventHandler<InvalidAccessTokenException> AccessTokenRequestedEvent;
+        public event CoreFunctions.AsyncEventHandler<WebSocketNotificationPayload> OnNotificationMessageAsync;
         public UserSequencer(string id, string access, List<CreateSubscriptionRequest> requestedSubscriptions, string clientId, ILogger logger) : base(id, access, requestedSubscriptions)
         {
             _logger = logger;
@@ -38,20 +38,23 @@ namespace Twitch.EventSub.User
             _subscriptionManager = new SubscriptionManager();
         }
 
-        protected override Func<Task> RunHandshakeAsync() => async Task () =>
+        protected override async Task RunHandshakeAsync()
         {
             _subscriptionManager.OnRefreshTokenRequestAsync -= OnRefreshTokenRequestAsync;
             _subscriptionManager.OnRefreshTokenRequestAsync += OnRefreshTokenRequestAsync;
             using (CancellationTokenSource cts = new CancellationTokenSource())
             {
-                if (await _subscriptionManager.RunCheckAsync(UserIdInternal,
+                var checkOk = await _subscriptionManager.RunCheckAsync(
+                    UserId,
                     RequestedSubscriptions,
                     ClientId,
                     AccessToken,
                     SessionId,
                     cts,
                     _logger
-                    ))
+                    );
+
+                if (checkOk)
                 {
                     await StateMachine.FireAsync(UserActions.HandShakeSuccess);
                 }
@@ -60,11 +63,11 @@ namespace Twitch.EventSub.User
                     await StateMachine.FireAsync(UserActions.HandShakeFail);
                 }
             }
-        };
+        }
 
         private async Task OnRefreshTokenRequestAsync(object sender, InvalidAccessTokenException e)
         {
-            if (UserIdInternal != e.SourceUserId)
+            if (UserId != e.SourceUserId)
             {
                 return;
             }
@@ -84,7 +87,7 @@ namespace Twitch.EventSub.User
             };
         }
 
-        protected override Func<Task> AwaitWelcomeMessage() => async Task () =>
+        protected override async Task AwaitWelcomeMessageAsync()
         {
             try
             {
@@ -99,21 +102,22 @@ namespace Twitch.EventSub.User
                 _logger.LogErrorDetails("[EventSubClient] - [UserSequencer] Welcome message didn't come in time.", Socket, DateTime.Now);
                 await StateMachine.FireAsync(UserActions.WelcomeMessageFail);
             }
-        };
+        }
 
-        protected override Func<Task> RunManagerAsync() => async Task () =>
+        protected override async Task RunManagerAsync()
         {
             {
                 ManagerCancelationSource = new CancellationTokenSource();
-
-                if (await _subscriptionManager.RunCheckAsync(UserIdInternal,
+                var checkOk = await _subscriptionManager.RunCheckAsync(
+                    UserId,
                     RequestedSubscriptions,
                     ClientId,
                     AccessToken,
                     SessionId,
                     ManagerCancelationSource,
                     _logger
-                    ))
+                    );
+                if (checkOk)
                 {
                     //repeat after 30 minutes
                     await StateMachine.FireAsync(UserActions.RunningAwait);
@@ -125,9 +129,9 @@ namespace Twitch.EventSub.User
 
 
             }
-        };
+        }
 
-        protected override Func<Task> AwaitManagerAsync() => async Task () =>
+        protected override async Task AwaitManagerAsync()
         {
             try
             {
@@ -137,19 +141,15 @@ namespace Twitch.EventSub.User
             {
                 await StateMachine.FireAsync(UserActions.RunningProceed);
             }
-        };
+        }
 
-        protected override Func<Task> StopManagerAsync()
+        protected override async Task StopManagerAsync()
         {
-            return Task () =>
-            {
-                ManagerCancelationSource.Cancel();
-                return Task.CompletedTask;
-            };
+            await ManagerCancelationSource.CancelAsync();
         }
 
 
-        protected override Func<Task> RunWebsocketAsync() => async Task () =>
+        protected override async Task RunWebsocketAsync()
         {
             if (Socket.IsRunning)
             {
@@ -168,7 +168,7 @@ namespace Twitch.EventSub.User
             {
                 await StateMachine.FireAsync(UserActions.WebsocketFail);
             }
-        };
+        }
 
         private async Task OnServerSideTerminationAsync(UserSequencer userSequencer, DisconnectionInfo disconnectInfo)
         {
@@ -190,6 +190,7 @@ namespace Twitch.EventSub.User
             try
             {
                 WebSocketMessage message;
+                await OnRawMessageRecievedAsync(this, e);
                 try
                 {
                     message = await MessageProcessing.DeserializeMessageAsync(e);
@@ -227,7 +228,7 @@ namespace Twitch.EventSub.User
             }
         }
 
-        protected override Func<Task> InicialAccessToken() => async Task () =>
+        protected override async Task InicialAccessTokenAsync()
         {
             {
                 using (CancellationTokenSource cts = new CancellationTokenSource(1000))
@@ -243,9 +244,9 @@ namespace Twitch.EventSub.User
                 }
             }
 
-        };
+        }
 
-        protected override Func<Task> NewAccessTokenRequest() => async Task () =>
+        protected override async Task NewAccessTokenRequestAsync()
         {
             {
                 if (LastAccessViolationException != null)
@@ -278,7 +279,7 @@ namespace Twitch.EventSub.User
                     await StateMachine.FireAsync(UserActions.AwaitNewTokenFailed);
                 }
             }
-        };
+        }
 
         private async Task WelcomeMessageProcessingAsync(WebSocketWelcomeMessage message)
         {
@@ -311,7 +312,9 @@ namespace Twitch.EventSub.User
         {
             _watchdog.Reset();
             if (message.Payload != null)
-                await OnNotificationMessageAsync.TryInvoke(this, message.Payload);
+            {
+                await OnNotificationMessageAsync(this, message.Payload);
+            }
             _logger.LogDebugDetails("[EventSubClient] - [UserSequencer] Notification message detected", message, DateTime.Now);
         }
 
@@ -377,7 +380,7 @@ namespace Twitch.EventSub.User
             {
                 using (var cls = new CancellationTokenSource(1000))
                 {
-                    if (!await _subscriptionManager.ApiTrySubscribeAsync(ClientId, AccessToken, sub, UserIdInternal, _logger, cls))
+                    if (!await _subscriptionManager.ApiTrySubscribeAsync(ClientId, AccessToken, sub, UserId, _logger, cls))
                     {
                         _logger.LogInformation("[EventSubClient] - [SubscriptionManager] Failed to subscribe subscription during revocation");
                         return;
@@ -413,20 +416,20 @@ namespace Twitch.EventSub.User
             await StateMachine.FireAsync(UserActions.Fail);
         }
 
-        protected override Func<Task> StopProcedure() => async Task () =>
+        protected override async Task StopProcedureAsync()
         {
             using (var cls = new CancellationTokenSource(1000))
             {
-                await _subscriptionManager.ClearAsync(ClientId, AccessToken, UserIdInternal, _logger, cls);
+                await _subscriptionManager.ClearAsync(ClientId, AccessToken, UserId, _logger, cls);
             }
             _watchdog.Stop();
             await Socket.Stop(WebSocketCloseStatus.NormalClosure, "Closing");
             await StateMachine.FireAsync(UserActions.Dispose);
-        };
+        }
 
-        protected override Func<Task> FailProcedure() => async Task () =>
+        protected override async Task FailProcedureAsync()
         {
             await StateMachine.FireAsync(UserActions.Dispose);
-        };
+        }
     }
 }

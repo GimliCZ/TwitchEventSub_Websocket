@@ -7,7 +7,7 @@ namespace Twitch.EventSub.User
 {
     public class SubscriptionManager
     {
-        public event AsyncEventHandler<InvalidAccessTokenException, SubscriptionManager> OnRefreshTokenRequestAsync;
+        public event AsyncEventHandler<InvalidAccessTokenException> OnRefreshTokenRequestAsync;
         public async Task<bool> RunCheckAsync(string userId, List<CreateSubscriptionRequest> requestedSubscriptions, string clientId, string accessToken, string sessionId, CancellationTokenSource clSource, ILogger logger)
         {
             foreach (var typeListOfSub in requestedSubscriptions)

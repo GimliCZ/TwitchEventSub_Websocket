@@ -9,7 +9,7 @@ namespace Twitch.EventSub.CoreFunctions
         private bool _isRunning;
         private readonly ILogger _logger;
 
-        public event AsyncEventHandler<string, Watchdog> OnWatchdogTimeout;
+        public event AsyncEventHandler<string> OnWatchdogTimeout;
 
         public Watchdog(ILogger logger)
         {

@@ -9,7 +9,7 @@ namespace Twitch.EventSub.User
         public Uri Url { get; set; }
         public UserState State { get; set; }
         public WebsocketClient Socket { get; set; }
-        public string UserIdInternal { get; set; }
+        public string UserId { get; set; }
         public string SessionId { get; set; }
         public string Conduit { get; set; }
         public string AccessToken { get; set; }
@@ -26,7 +26,7 @@ namespace Twitch.EventSub.User
         {
             State = UserState.Registred;
             Socket = new WebsocketClient(Url ?? new Uri(DefaultWebSocketUrl));
-            UserIdInternal = id;
+            UserId = id;
             AccessToken = access;
             StateMachine = new Stateless.StateMachine<UserState, UserActions>(() => State, s => State = s);
             StateMachineCofiguration(StateMachine);
@@ -37,11 +37,10 @@ namespace Twitch.EventSub.User
         {
             await StateMachine.ActivateAsync();
         }
-        public bool Update(string id, string access, List<CreateSubscriptionRequest> requestedSubscriptions)
+        public bool Update(string access, List<CreateSubscriptionRequest> requestedSubscriptions)
         {
             if (State == UserState.Awaiting)
             {
-                UserIdInternal = id;
                 AccessToken = access;
                 RequestedSubscriptions = requestedSubscriptions;
                 return true;
@@ -111,22 +110,22 @@ namespace Twitch.EventSub.User
                 .Permit(UserActions.AccessTesting, UserState.InicialAccessTest);
             //If result of testing is good, try to establish connection, else, request new token
             machine.Configure(UserState.InicialAccessTest)
-                .OnEntryAsync(InicialAccessToken())
+                .OnEntryAsync(InicialAccessTokenAsync)
                 .Permit(UserActions.AccessSuccess, UserState.Websocket)
                 .Permit(UserActions.AccessFailed, UserState.AwaitNewTokenAfterFailedTest);
             //Try to establish connection, if succeeds, try to complete handshake, else, fail
             machine.Configure(UserState.Websocket)
-                .OnEntryAsync(RunWebsocketAsync())
+                .OnEntryAsync(RunWebsocketAsync)
                 .Permit(UserActions.WebsocketSuccess, UserState.WellcomeMessage)
                 .Permit(UserActions.WebsocketFail, UserState.Failing);
             machine.Configure(UserState.WellcomeMessage).
-                OnEntryAsync(AwaitWelcomeMessage())
+                OnEntryAsync(AwaitWelcomeMessageAsync)
                 .Permit(UserActions.WelcomeMessageSuccess, UserState.HandShake)
                 .Permit(UserActions.WelcomeMessageFail, UserState.Failing);
             //If handShake Succeeds, then run, else if we get notification, we lost access, try to reestablish connection
             //Else, fail over
             machine.Configure(UserState.HandShake)
-                .OnEntryAsync(RunHandshakeAsync())
+                .OnEntryAsync(RunHandshakeAsync)
                 .Permit(UserActions.HandShakeSuccess, UserState.Running)
                 .Permit(UserActions.HandShakeAccessFail, UserState.AwaitNewTokenAfterFailedHandShake)
                 .Permit(UserActions.HandShakeFail, UserState.Failing)
@@ -134,7 +133,7 @@ namespace Twitch.EventSub.User
             //If running, enable token reestablishment, stop and failover
             machine.Configure(UserState.Running)
                 .PermitReentry(UserActions.RunningProceed)
-                .OnEntryAsync(RunManagerAsync())
+                .OnEntryAsync(RunManagerAsync)
                 .Permit(UserActions.RunningAwait, UserState.Awaiting)
                 .Permit(UserActions.RunningAccessFail, UserState.AwaitNewTokenAfterFailedRun)
                 .Permit(UserActions.ReconnectRequested, UserState.Reconnecting)
@@ -143,7 +142,7 @@ namespace Twitch.EventSub.User
                 .Permit(UserActions.HandShakeFail, UserState.Failing)
                 .Permit(UserActions.WebsocketFail, UserState.Failing);
             machine.Configure(UserState.Awaiting)
-                .OnEntryAsync(AwaitManagerAsync())
+                .OnEntryAsync(AwaitManagerAsync)
                 .Permit(UserActions.RunningAccessFail, UserState.AwaitNewTokenAfterFailedRun)
                 .Permit(UserActions.ReconnectRequested, UserState.Reconnecting)
                 .Permit(UserActions.Stop, UserState.Stoping)
@@ -152,47 +151,48 @@ namespace Twitch.EventSub.User
                 .Permit(UserActions.WebsocketFail, UserState.Failing);
             //If NewAcessToken Requested, Start timer and 
             machine.Configure(UserState.AwaitNewTokenAfterFailedTest)
-                .OnEntryAsync(NewAccessTokenRequest())
+                .OnEntryAsync(NewAccessTokenRequestAsync)
                 .Permit(UserActions.NewTokenProvidedReturnToInicialTest, UserState.InicialAccessTest)
                 .Permit(UserActions.AwaitNewTokenFailed, UserState.Stoping);
             machine.Configure(UserState.AwaitNewTokenAfterFailedHandShake)
-                .OnEntryAsync(NewAccessTokenRequest())
+                .OnEntryAsync(NewAccessTokenRequestAsync)
                 .Permit(UserActions.NewTokenProvidedReturnToHandShake, UserState.HandShake)
                 .Permit(UserActions.AwaitNewTokenFailed, UserState.Stoping);
             machine.Configure(UserState.AwaitNewTokenAfterFailedRun)
-                .OnEntryAsync(NewAccessTokenRequest())
+                .OnEntryAsync(NewAccessTokenRequestAsync)
                 .Permit(UserActions.NewTokenProvidedReturnToRunning, UserState.Running)
                 .Permit(UserActions.AwaitNewTokenFailed, UserState.Stoping);
             machine.Configure(UserState.Reconnecting)
                 .Permit(UserActions.ReconnectSuccess, UserState.Running)
                 .Permit(UserActions.ReconnectFail, UserState.Failing);
             machine.Configure(UserState.Stoping)
-                .OnEntryAsync(StopProcedure())
+                .OnEntryAsync(StopProcedureAsync)
                 .Permit(UserActions.Dispose, UserState.Disposed);
             machine.Configure(UserState.Failing)
-                .OnEntryAsync(FailProcedure())
+                .OnEntryAsync(FailProcedureAsync)
                 .Permit(UserActions.Dispose, UserState.Disposed);
             machine.Configure(UserState.Disposed)
-                .OnEntryAsync(DisposeProcedure());
+                .OnEntryAsync(DisposeProcedureAsync);
         }
 
-        protected abstract Func<Task> FailProcedure();
-        protected abstract Func<Task> StopProcedure();
-        private Func<Task> DisposeProcedure() => async Task () =>
+        protected abstract Task FailProcedureAsync();
+        protected abstract Task StopProcedureAsync();
+        private async Task DisposeProcedureAsync()
         {
             Socket.Dispose();
-            ManagerCancelationSource.Cancel();
+            await ManagerCancelationSource.CancelAsync();
             await StateMachine.DeactivateAsync();
-        };
+        }
 
-        protected abstract Func<Task> AwaitManagerAsync();
-        protected abstract Func<Task> StopManagerAsync();
-        protected abstract Func<Task> AwaitWelcomeMessage();
-        protected abstract Func<Task> InicialAccessToken();
-        protected abstract Func<Task> NewAccessTokenRequest();
-        protected abstract Func<Task> RunManagerAsync();
-        protected abstract Func<Task> RunHandshakeAsync();
-        protected abstract Func<Task> RunWebsocketAsync();
+        protected abstract Task AwaitManagerAsync();
+
+        protected abstract Task StopManagerAsync();
+        protected abstract Task AwaitWelcomeMessageAsync();
+        protected abstract Task InicialAccessTokenAsync();
+        protected abstract Task NewAccessTokenRequestAsync();
+        protected abstract Task RunManagerAsync();
+        protected abstract Task RunHandshakeAsync();
+        protected abstract Task RunWebsocketAsync();
 
     }
 }
