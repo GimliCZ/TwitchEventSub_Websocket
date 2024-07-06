@@ -1,7 +1,7 @@
 # TwitchEventSub_Websocket
 <p align="center">
   <img src="https://buildstats.info/nuget/Twitch.EventSub.Websocket" style="max-height: 300px;" alt="Platform: iOS">
-  <img src="https://img.shields.io/badge/Platform-.NET%206-orange.svg"style="max-height: 300px;" alt="Platform: iOS">
+  <img src="https://img.shields.io/badge/Platform-.NET%208-orange.svg"style="max-height: 300px;" alt="Platform: iOS">
 </p>
 
 ## About
@@ -47,6 +47,9 @@ eventSubClient.OnUnexpectedConnectionTermination -= EventSubClientOnUnexpectedCo
 eventSubClient.OnUnexpectedConnectionTermination += EventSubClientOnUnexpectedConnectionTermination;
 ```
 This can trigger your own procedure which could restart entire client or log what happened.
+
+#### State Machine Structure
+![alt text](https://github.com/GimliCZ/TwitchEventSub_Websocket/blob/Conduit-Websocket/graphviz.png)
 
 ## License
 This project is available under the MIT license. See the LICENSE file for more info.
