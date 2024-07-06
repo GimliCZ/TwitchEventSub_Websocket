@@ -151,6 +151,11 @@ namespace Twitch.EventSub.User
             }
         }
 
+        public Task<bool> ApiTryValidateAsync(string accessToken, string userId, ILogger logger, CancellationTokenSource clSource)
+        {
+            Task<bool> TryValidateAsync() => TwitchApi.ValidateTokenAsync(accessToken, clSource, logger);
+            return TryFuncAsync(TryValidateAsync, logger, userId);
+        }
 
         public Task<bool> ApiTrySubscribeAsync(string clientId, string accessToken, CreateSubscriptionRequest create, string userId, ILogger logger, CancellationTokenSource clSource)
         {
@@ -188,19 +193,19 @@ namespace Twitch.EventSub.User
             {
                 ex.SourceUserId = UserId;
                 //procedure must run UpdateOnFly function for proper change
-                await OnRefreshTokenRequestAsync.TryInvoke(this, ex);
                 logger.LogInformationDetails("[EventSubClient] - [SubscriptionManager] Invalid Access token detected, requesting change.", ex);
+                await OnRefreshTokenRequestAsync.TryInvoke(this, ex);
             }
             catch (TaskCanceledException)
             {
-                //its alright, move on
+                logger.LogWarning($"[EventSubClient] - [SubscriptionManager] Task cancelled before completion. Try to increase cancelation token");
             }
             catch (Exception ex)
             {
                 logger.LogInformationDetails("[EventSubClient] - [SubscriptionManager] Api call failed due to:", ex);
             }
             //This is expected behavior. If we get null or false, we handle it in higher part of function
-            logger.LogWarningDetails("[EventSubClient] - [SubscriptionManager] Try Func Async returned Default value.", apiCallAction.Method.Name);
+            logger.LogInformationDetails("[EventSubClient] - [SubscriptionManager] Try Func Async returned Default value.", apiCallAction.Method.Name);
             return default;
         }
     }

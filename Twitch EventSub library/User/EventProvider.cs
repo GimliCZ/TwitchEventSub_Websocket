@@ -9,7 +9,13 @@ namespace Twitch.EventSub.User
 {
     public class EventProvider : IEventProvider
     {
-        private readonly UserSequencer _userSequencer;
+        private UserSequencer _userSequencer;
+        private string _userId;
+        private ILogger _logger;
+        private string _accessToken;
+        private List<SubscriptionType> _listOfSubs;
+        private string _clientId;
+        public bool IsConnected => _userSequencer?.Socket?.IsRunning == true;
 
         #region Available events
         public event AsyncEventHandler<UpdateNotificationEvent> OnUpdateNotificationEventAsync;
@@ -81,42 +87,66 @@ namespace Twitch.EventSub.User
             ArgumentException.ThrowIfNullOrWhiteSpace(clientId, nameof(clientId));
             ArgumentNullException.ThrowIfNull(listOfSubs, nameof(listOfSubs));
             ArgumentNullException.ThrowIfNull(logger, nameof(logger));
+            _userId = userId;
+            _accessToken = accessToken;
+            _listOfSubs = listOfSubs;
+            _clientId = clientId;
+            _logger = logger;
 
+            Create();
+
+        }
+
+        private void Create()
+        {
             var listOfRequests = new List<CreateSubscriptionRequest>();
-            foreach (var type in listOfSubs)
+            foreach (var type in _listOfSubs)
             {
                 listOfRequests.Add(new CreateSubscriptionRequest()
                 {
                     Transport = new Transport() { Method = "websocket" },
                     Condition = new Condition()
-                }.SetSubscriptionType(type, userId));
+                }.SetSubscriptionType(type, _userId));
             }
-            _userSequencer = new UserSequencer(userId, accessToken, listOfRequests, clientId, logger);
+            _userSequencer = new UserSequencer(_userId, _accessToken, listOfRequests, _clientId, _logger);
 
             _userSequencer.AccessTokenRequestedEvent += AccessTokenRequestedEventAsync;
             _userSequencer.OnRawMessageRecievedAsync += OnRawMessageReceivedAsync;
             _userSequencer.OnOutsideDisconnectAsync += OnOutsideDisconnectAsync;
             _userSequencer.OnNotificationMessageAsync += Sequencer_OnNotificationMessageAsync;
+            _userSequencer.OnDispose += _userSequencer_OnDispose;
         }
 
-        public bool IsDisposed()
+        private void _userSequencer_OnDispose(object? sender, string? e)
         {
-            return _userSequencer.IsDisposed();
+            _userSequencer.AccessTokenRequestedEvent -= AccessTokenRequestedEventAsync;
+            _userSequencer.OnRawMessageRecievedAsync -= OnRawMessageReceivedAsync;
+            _userSequencer.OnOutsideDisconnectAsync -= OnOutsideDisconnectAsync;
+            _userSequencer.OnNotificationMessageAsync -= Sequencer_OnNotificationMessageAsync;
+            _userSequencer.OnDispose -= _userSequencer_OnDispose;
         }
-        public Task StartAsync()
+
+        internal Task StartAsync()
         {
+            if (_userSequencer.IsDisposed())
+            {
+                Create();
+            }
             return _userSequencer.StartAsync();
         }
 
-        public Task<bool> StopAsync()
+        internal Task<bool> StopAsync()
         {
             return _userSequencer.StopAsync();
         }
 
-        public bool Update(string accessToken, List<SubscriptionType> listOfSubs)
+        internal bool Update(string accessToken, List<SubscriptionType> listOfSubs)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(accessToken, nameof(accessToken));
             ArgumentNullException.ThrowIfNull(listOfSubs, nameof(listOfSubs));
+
+            _accessToken = accessToken;
+            _listOfSubs = listOfSubs;
 
             var listOfRequests = new List<CreateSubscriptionRequest>();
             foreach (var type in listOfSubs)

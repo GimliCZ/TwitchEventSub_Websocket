@@ -23,12 +23,15 @@ namespace Twitch.EventSub.User
         private ReplayProtection _replayProtection;
         private Watchdog _watchdog;
         private AsyncAutoResetEvent _awaitMessage = new(false);
+        private AsyncAutoResetEvent _awaitRefresh = new(false);
         private SubscriptionManager _subscriptionManager;
+        private Timer _managerTimer;
 
         public event CoreFunctions.AsyncEventHandler<string?> OnRawMessageRecievedAsync;
         public event CoreFunctions.AsyncEventHandler<string?> OnOutsideDisconnectAsync;
         public event CoreFunctions.AsyncEventHandler<InvalidAccessTokenException> AccessTokenRequestedEvent;
         public event CoreFunctions.AsyncEventHandler<WebSocketNotificationPayload> OnNotificationMessageAsync;
+
         public UserSequencer(string id, string access, List<CreateSubscriptionRequest> requestedSubscriptions, string clientId, ILogger logger) : base(id, access, requestedSubscriptions)
         {
             _logger = logger;
@@ -36,10 +39,18 @@ namespace Twitch.EventSub.User
             _watchdog = new Watchdog(logger);
             _replayProtection = new ReplayProtection(10);
             _subscriptionManager = new SubscriptionManager();
+            _logger.LogDebug("[UserSequencer] Initialized with UserId: {UserId}, ClientId: {ClientId}", id, clientId);
+            _managerTimer = new Timer(_ => OnManagerTimerEnlapsedAsync(), null, Timeout.Infinite, Timeout.Infinite);
+        }
+
+        private async void OnManagerTimerEnlapsedAsync()
+        {
+            await StateMachine.FireAsync(UserActions.RunningProceed);
         }
 
         protected override async Task RunHandshakeAsync()
         {
+            _logger.LogDebug("[RunHandshakeAsync] Starting handshake for UserId: {UserId}", UserId);
             _subscriptionManager.OnRefreshTokenRequestAsync -= OnRefreshTokenRequestAsync;
             _subscriptionManager.OnRefreshTokenRequestAsync += OnRefreshTokenRequestAsync;
             using (CancellationTokenSource cts = new CancellationTokenSource())
@@ -56,10 +67,12 @@ namespace Twitch.EventSub.User
 
                 if (checkOk)
                 {
+                    _logger.LogDebug("[RunHandshakeAsync] Handshake success for UserId: {UserId}", UserId);
                     await StateMachine.FireAsync(UserActions.HandShakeSuccess);
                 }
                 else
                 {
+                    _logger.LogDebug("[RunHandshakeAsync] Handshake failed for UserId: {UserId}", UserId);
                     await StateMachine.FireAsync(UserActions.HandShakeFail);
                 }
             }
@@ -67,33 +80,48 @@ namespace Twitch.EventSub.User
 
         private async Task OnRefreshTokenRequestAsync(object sender, InvalidAccessTokenException e)
         {
+            _logger.LogDebug($"RefreshToken request: {e}");
             if (UserId != e.SourceUserId)
             {
+                _logger.LogError("[OnRefreshTokenRequestAsync] SourceUserId does not match UserId: {UserId}", UserId);
                 return;
             }
+            if (e is null) 
+            {
+                _logger.LogError("[OnRefreshTokenRequestAsync] Got Null Invalid Access Token Exception");
+            }
             LastAccessViolationException = e;
+            _logger.LogDebug("[OnRefreshTokenRequestAsync] InvalidAccessTokenException received for UserId: {UserId}, State: {State}", UserId, StateMachine.State);
             switch (StateMachine.State)
             {
                 case UserState.Running:
+                    _logger.LogDebug($"[OnRefreshTokenRequestAsync] Invoking Running access token renew procedure {e}");
                     await StateMachine.FireAsync(UserActions.RunningAccessFail);
                     break;
                 case UserState.HandShake:
+                    _logger.LogDebug($"[OnRefreshTokenRequestAsync] Invoking Handshake access token renew procedure {e}");
                     await StateMachine.FireAsync(UserActions.HandShakeAccessFail);
                     break;
                 case UserState.InicialAccessTest:
+                    _logger.LogDebug($"[OnRefreshTokenRequestAsync] Invoking Test access token renew procedure {e}");
                     await StateMachine.FireAsync(UserActions.AccessFailed);
                     break;
-                default: throw new InvalidOperationException("[EventSubClient] - [UserSequencer] OnRefreshTokenRequestAsync went into unknown state");
+                default:
+                    _logger.LogError("[OnRefreshTokenRequestAsync] Unexpected state: {State}", StateMachine.State);
+                    throw new InvalidOperationException("[EventSubClient] - [UserSequencer] OnRefreshTokenRequestAsync went into unknown state");
             };
+            _awaitRefresh.Set();
         }
 
         protected override async Task AwaitWelcomeMessageAsync()
         {
+            _logger.LogDebug("[AwaitWelcomeMessageAsync] Awaiting welcome message for UserId: {UserId}", UserId);
             try
             {
                 using (var cls = new CancellationTokenSource(1000))
                 {
                     await _awaitMessage.WaitAsync(cls.Token);
+                    _logger.LogDebug("[AwaitWelcomeMessageAsync] Welcome message received for UserId: {UserId}", UserId);
                     await StateMachine.FireAsync(UserActions.WelcomeMessageSuccess);
                 }
             }
@@ -107,6 +135,8 @@ namespace Twitch.EventSub.User
         protected override async Task RunManagerAsync()
         {
             {
+                _logger.LogDebug("[RunManagerAsync] Running manager for UserId: {UserId}", UserId);
+                _managerTimer.Change(Timeout.Infinite, Timeout.Infinite);
                 ManagerCancelationSource = new CancellationTokenSource();
                 var checkOk = await _subscriptionManager.RunCheckAsync(
                     UserId,
@@ -120,10 +150,12 @@ namespace Twitch.EventSub.User
                 if (checkOk)
                 {
                     //repeat after 30 minutes
+                    _logger.LogDebug("[RunManagerAsync] Manager check successful for UserId: {UserId}", UserId);
                     await StateMachine.FireAsync(UserActions.RunningAwait);
                 }
                 else
                 {
+                    _logger.LogDebug("[RunManagerAsync] Manager check failed for UserId: {UserId}", UserId);
                     await StateMachine.FireAsync(UserActions.Fail);
                 }
 
@@ -133,24 +165,20 @@ namespace Twitch.EventSub.User
 
         protected override async Task AwaitManagerAsync()
         {
-            try
-            {
-                await Task.Delay(TimeSpan.FromMinutes(30), ManagerCancelationSource.Token).ConfigureAwait(false);
-            }
-            finally
-            {
-                await StateMachine.FireAsync(UserActions.RunningProceed);
-            }
+            _managerTimer.Change(TimeSpan.FromMinutes(30), TimeSpan.FromMinutes(30));
         }
 
         protected async Task StopManagerAsync()
         {
+            _managerTimer.Change(Timeout.Infinite, Timeout.Infinite);
+            _logger.LogDebug("[StopManagerAsync] Stopping manager for UserId: {UserId}", UserId);
             await ManagerCancelationSource.CancelAsync();
         }
 
 
         protected override async Task RunWebsocketAsync()
         {
+            _logger.LogDebug("[RunWebsocketAsync] Running WebSocket for UserId: {UserId}", UserId);
             if (Socket.IsRunning)
             {
                 _logger.LogInformation("[EventSubClient] - [UserSequencer] Socket already active");
@@ -162,22 +190,32 @@ namespace Twitch.EventSub.User
             await Socket.Start();
             if (Socket.IsRunning)
             {
+                _logger.LogDebug("[RunWebsocketAsync] WebSocket started successfully for UserId: {UserId}", UserId);
                 await StateMachine.FireAsync(UserActions.WebsocketSuccess);
             }
             else
             {
+                _logger.LogDebug("[RunWebsocketAsync] WebSocket failed to start for UserId: {UserId}", UserId);
                 await StateMachine.FireAsync(UserActions.WebsocketFail);
             }
         }
 
         private async Task OnServerSideTerminationAsync(UserSequencer userSequencer, DisconnectionInfo disconnectInfo)
         {
+            _watchdog.Stop();
+            
+            if (StateMachine.State == UserState.Stoping) 
+            {
+                _logger.LogInformation("[EventSubClient] - [UserSequencer] Socket correctly disconnected");
+                return;
+            }
             _logger.LogErrorDetails("[EventSubClient] - [UserSequencer] Socket Disconnected from outside", disconnectInfo);
             await StateMachine.FireAsync(UserActions.WebsocketFail);
         }
 
         private async Task SocketOnMessageReceivedAsync(UserSequencer userSequencer, string? text)
         {
+            _logger.LogDebug("[SocketOnMessageReceivedAsync] Message received: {Text}", text);
             if (!string.IsNullOrEmpty(text))
             {
                 await ParseWebSocketMessageAsync(text);
@@ -187,6 +225,7 @@ namespace Twitch.EventSub.User
 
         private async Task<Task> ParseWebSocketMessageAsync(string e)
         {
+            _logger.LogDebug("[ParseWebSocketMessageAsync] Parsing message: {Message}", e);
             try
             {
                 WebSocketMessage message;
@@ -206,6 +245,7 @@ namespace Twitch.EventSub.User
                 if (_replayProtection.IsDuplicate(message.Metadata.MessageId) ||
                     !_replayProtection.IsUpToDate(message.Metadata.MessageTimestamp))
                 {
+                    _logger.LogDebug("[ParseWebSocketMessageAsync] Duplicate or outdated message: {MessageId}", message.Metadata.MessageId);
                     return Task.CompletedTask;
                 }
 
@@ -231,14 +271,19 @@ namespace Twitch.EventSub.User
         protected override async Task InicialAccessTokenAsync()
         {
             {
-                using (CancellationTokenSource cts = new CancellationTokenSource(1000))
+                _logger.LogDebug("[InicialAccessTokenAsync] Validating initial access token for UserId: {UserId}", UserId);
+                using (CancellationTokenSource cts = new CancellationTokenSource(10000))
                 {
-                    if (await TwitchApi.ValidateTokenAsync(AccessToken, cts, _logger))
+                    
+                    var validationResult = await _subscriptionManager.ApiTryValidateAsync(AccessToken,UserId, _logger, cts);
+                    if (validationResult)
                     {
+                        _logger.LogDebug("[InicialAccessTokenAsync] Initial access token validated for UserId: {UserId}", UserId);
                         await StateMachine.FireAsync(UserActions.AccessSuccess);
                     }
                     else
                     {
+                        _logger.LogDebug("[InicialAccessTokenAsync] Initial access token validation failed for UserId: {UserId}", UserId);
                         await StateMachine.FireAsync(UserActions.AccessFailed);
                     }
                 }
@@ -249,6 +294,8 @@ namespace Twitch.EventSub.User
         protected override async Task NewAccessTokenRequestAsync()
         {
             {
+                _logger.LogDebug("[NewAccessTokenRequestAsync] Requesting new access token for UserId: {UserId}", UserId);
+                await _awaitRefresh.WaitAsync();
                 if (LastAccessViolationException != null)
                 {
                     var invalidToken = AccessToken;
@@ -257,20 +304,26 @@ namespace Twitch.EventSub.User
                     var NewToken = AccessToken;
                     if (invalidToken == NewToken)
                     {
+                        _logger.LogDebug("[NewAccessTokenRequestAsync] New token is the same as the invalid token for UserId: {UserId}", UserId);
                         await StateMachine.FireAsync(UserActions.AwaitNewTokenFailed);
                     }
                     switch (StateMachine.State)
                     {
                         case UserState.AwaitNewTokenAfterFailedTest:
+                            _logger.LogDebug($"[NewAccessTokenRequestAsync] Returning to Test after Access Token renew {invalidToken}");
                             await StateMachine.FireAsync(UserActions.NewTokenProvidedReturnToInicialTest);
                             break;
                         case UserState.AwaitNewTokenAfterFailedHandShake:
+                            _logger.LogDebug($"[NewAccessTokenRequestAsync] Returning to Handshake after Access Token renew {invalidToken}");
                             await StateMachine.FireAsync(UserActions.NewTokenProvidedReturnToHandShake);
                             break;
                         case UserState.AwaitNewTokenAfterFailedRun:
+                            _logger.LogDebug($"[NewAccessTokenRequestAsync] Returning to Run after Access Token renew {invalidToken}");
                             await StateMachine.FireAsync(UserActions.NewTokenProvidedReturnToRunning);
                             break;
-                        default: throw new InvalidOperationException("NewAccessTokenRequest run into invalid state");
+                        default:
+                            _logger.LogError("[NewAccessTokenRequestAsync] Unexpected state: {State}", StateMachine.State);
+                            throw new InvalidOperationException("NewAccessTokenRequest run into invalid state");
                     };
                 }
                 else
@@ -283,6 +336,7 @@ namespace Twitch.EventSub.User
 
         private async Task WelcomeMessageProcessingAsync(WebSocketWelcomeMessage message)
         {
+            _logger.LogDebug("[WelcomeMessageProcessingAsync] Processing welcome message for UserId: {UserId}", UserId);
             if (message?.Payload?.Session?.Id != null)
             {
                 SessionId = message.Payload.Session.Id;
@@ -320,6 +374,7 @@ namespace Twitch.EventSub.User
 
         private async Task ReconnectMessageProcessingAsync(WebSocketReconnectMessage message)
         {
+            _logger.LogDebug("[ReconnectMessageProcessingAsync] Processing reconnect message for UserId: {UserId}", UserId);
             await StateMachine.FireAsync(UserActions.ReconnectRequested);
             _watchdog.Stop();
 
@@ -370,7 +425,7 @@ namespace Twitch.EventSub.User
 
         private async Task RevocationMessageProcessingAsync(WebSocketRevocationMessage e)
         {
-
+            _logger.LogDebug("[RevocationMessageProcessingAsync] Processing revocation message for UserId: {UserId}", UserId);
             if (RequestedSubscriptions == null || ClientId == null || AccessToken == null)
             {
                 _logger.LogInformation("[EventSubClient] - [SubscriptionManager] Revocation Resolver got subscriptions, clientId or accessToken as Null");
@@ -393,12 +448,14 @@ namespace Twitch.EventSub.User
 
         private Task PingMessageProcessingAsync()
         {
+            _logger.LogDebug("[PingMessageProcessingAsync] Ping message detected");
             Socket.Send("Pong");
             return Task.CompletedTask;
         }
 
         private Task KeepAliveMessageProcessingAsync()
         {
+            _logger.LogDebug("[KeepAliveMessageProcessingAsync] KeepAlive message detected");
             _watchdog.Reset();
             _logger.LogDebugDetails("[EventSubClient] - [UserSequencer] KeepAlive message detected", DateTime.Now);
             return Task.CompletedTask;
@@ -418,8 +475,9 @@ namespace Twitch.EventSub.User
 
         protected override async Task StopProcedureAsync()
         {
+            _logger.LogDebug("[StopProcedureAsync] Stopping procedure for UserId: {UserId}", UserId);
             await StopManagerAsync();
-            using (var cls = new CancellationTokenSource(1000))
+            using (var cls = new CancellationTokenSource(10000))
             {
                 await _subscriptionManager.ClearAsync(ClientId, AccessToken, UserId, _logger, cls);
             }
@@ -430,6 +488,7 @@ namespace Twitch.EventSub.User
 
         protected override async Task FailProcedureAsync()
         {
+            _logger.LogDebug("[FailProcedureAsync] Failing procedure for UserId: {UserId}", UserId);
             await StateMachine.FireAsync(UserActions.Dispose);
         }
     }

@@ -55,10 +55,6 @@ namespace Twitch.EventSub.Interfaces
         event AsyncEventHandler<UnBanEvent> OnUnBanEventAsync;
         event EventHandler<string?> OnUnexpectedConnectionTermination;
         event AsyncEventHandler<UpdateNotificationEvent> OnUpdateNotificationEventAsync;
-
-        Task StartAsync();
-        Task <bool> StopAsync();
-        bool IsDisposed();
-        bool Update(string accessToken, List<SubscriptionType> listOfSubs);
+        bool IsConnected { get; }
     }
 }

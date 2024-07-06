@@ -10,10 +10,10 @@ namespace Twitch.EventSub.User
         public Uri Url { get; set; }
         public UserState State { get; set; }
         public WebsocketClient Socket { get; set; }
-        public string UserId { get; set; }
+        public string UserId { get; protected set; }
         public string SessionId { get; set; }
         public string Conduit { get; set; }
-        public string AccessToken { get; set; }
+        public string AccessToken { get; protected set; }
         public Stateless.StateMachine<UserState, UserActions> StateMachine { get; set; }
         public CancellationTokenSource ManagerCancelationSource { get; set; }
 
@@ -22,10 +22,13 @@ namespace Twitch.EventSub.User
 
         public List<CreateSubscriptionRequest> RequestedSubscriptions;
         public InvalidAccessTokenException? LastAccessViolationException { get; set; }
+        internal event EventHandler<string?> OnDispose;
+
         public UserBase(string id, string access, List<CreateSubscriptionRequest> requestedSubscriptions)
         {
             State = UserState.Registred;
             Socket = new WebsocketClient(Url ?? new Uri(DefaultWebSocketUrl));
+            Socket.IsReconnectionEnabled = false;
             UserId = id;
             AccessToken = access;
             StateMachine = new Stateless.StateMachine<UserState, UserActions>(() => State, s => State = s);
@@ -41,10 +44,18 @@ namespace Twitch.EventSub.User
         public async Task StartAsync()
         {
             await StateMachine.ActivateAsync();
+
+            if (StateMachine.State == UserState.Registred)
+            {
+                await StateMachine.FireAsync(UserActions.AccessTesting);
+            }
         }
         public bool Update(string access, List<CreateSubscriptionRequest> requestedSubscriptions)
         {
-            if (State == UserState.Awaiting)
+            if (State == UserState.Awaiting ||
+                State == UserState.AwaitNewTokenAfterFailedTest ||
+                State == UserState.AwaitNewTokenAfterFailedHandShake ||
+                State == UserState.AwaitNewTokenAfterFailedRun)
             {
                 AccessToken = access;
                 RequestedSubscriptions = requestedSubscriptions;
@@ -115,7 +126,6 @@ namespace Twitch.EventSub.User
         {
             //If User is pressent within list, Try to test his access
             machine.Configure(UserState.Registred)
-                .OnEntry(_ => StateMachine.Fire(UserActions.AccessTesting))
                 .Permit(UserActions.AccessTesting, UserState.InicialAccessTest);
             //If result of testing is good, try to establish connection, else, request new token
             machine.Configure(UserState.InicialAccessTest)
@@ -152,6 +162,7 @@ namespace Twitch.EventSub.User
                 .Permit(UserActions.WebsocketFail, UserState.Failing);
             machine.Configure(UserState.Awaiting)
                 .OnEntryAsync(AwaitManagerAsync)
+                .Permit(UserActions.RunningProceed,UserState.Running)
                 .Permit(UserActions.RunningAccessFail, UserState.AwaitNewTokenAfterFailedRun)
                 .Permit(UserActions.ReconnectRequested, UserState.Reconnecting)
                 .Permit(UserActions.Stop, UserState.Stoping)
@@ -191,6 +202,7 @@ namespace Twitch.EventSub.User
             Socket.Dispose();
             await ManagerCancelationSource.CancelAsync();
             await StateMachine.DeactivateAsync();
+            OnDispose?.Invoke(this,UserId);
         }
 
         protected abstract Task AwaitManagerAsync();

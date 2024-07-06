@@ -204,6 +204,7 @@ namespace Twitch.EventSub.API
                     switch (response.StatusCode)
                     {
                         case System.Net.HttpStatusCode.OK:
+                            logger.LogDebug("[EventSubClient] - [TwitchApi] Validation of Token Successfull {StatusCode}", response.StatusCode);
                             return true;
                         case System.Net.HttpStatusCode.Unauthorized:
                             var errorMessage = await response.Content.ReadAsStringAsync(clSource.Token);

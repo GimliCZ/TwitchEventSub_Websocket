@@ -4,7 +4,7 @@ namespace Twitch.EventSub.CoreFunctions
 {
     public class Watchdog
     {
-        private Timer _timer;
+        private Timer _timerWatchdog;
         private int _timeout;
         private bool _isRunning;
         private readonly ILogger _logger;
@@ -30,7 +30,7 @@ namespace Twitch.EventSub.CoreFunctions
             if (!_isRunning)
             {
                 _isRunning = true;
-                _timer = new Timer(OnTimerElapsed, null, _timeout, _timeout);
+                _timerWatchdog = new Timer(OnTimerElapsed, null, _timeout, _timeout);
                 _logger.LogDebug("[EventSubClient] - [Watchdog] Watchdog started.");
             }
             else
@@ -44,13 +44,13 @@ namespace Twitch.EventSub.CoreFunctions
         /// <exception cref="ArgumentNullException"></exception>
         public void Reset()
         {
-            if (_timer == null)
+            if (_timerWatchdog == null)
             {
-                throw new ArgumentNullException(nameof(_timer));
+                throw new ArgumentNullException(nameof(_timerWatchdog));
             }
             if (_isRunning)
             {
-                _timer.Change(_timeout, Timeout.Infinite);
+                _timerWatchdog.Change(_timeout, Timeout.Infinite);
                 _logger.LogDebug("[EventSubClient] - [Watchdog] Watchdog reset.");
             }
             else
@@ -64,13 +64,13 @@ namespace Twitch.EventSub.CoreFunctions
         /// <exception cref="ArgumentNullException"></exception>
         public void Stop()
         {
-            if (_timer == null)
+            if (_timerWatchdog == null)
             {
-                throw new ArgumentNullException(nameof(_timer));
+                throw new ArgumentNullException(nameof(_timerWatchdog));
             }
             if (_isRunning)
             {
-                _timer.Change(Timeout.Infinite, Timeout.Infinite);
+                _timerWatchdog.Change(Timeout.Infinite, Timeout.Infinite);
                 _isRunning = false;
                 _logger.LogDebug("[EventSubClient] - [Watchdog] Watchdog stopped.");
             }
@@ -85,7 +85,7 @@ namespace Twitch.EventSub.CoreFunctions
         /// <param name="state"></param>
         private async void OnTimerElapsed(object? state)
         {
-            _timer.Change(Timeout.Infinite, Timeout.Infinite);
+            _timerWatchdog.Change(Timeout.Infinite, Timeout.Infinite);
             _isRunning = false;
 
             // Raise the WatchdogTimeout event
