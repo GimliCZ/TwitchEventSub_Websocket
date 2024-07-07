@@ -4,8 +4,15 @@ using Twitch.EventSub.Messages.NotificationMessage.Events;
 
 namespace Twitch.EventSub.Interfaces
 {
+    /// <summary>
+    /// Primary source of events
+    /// OnRefreshTokenAsync event is mandatory for propper function
+    /// </summary>
     public interface IEventProvider
     {
+        /// <summary>
+        /// Directly reports Connection state from Socket, may be used for reconnect detection
+        /// </summary>
         bool IsConnected { get; }
         event AsyncEventHandler<BanEvent> OnBanEventAsync;
         event AsyncEventHandler<FollowEvent> OnFollowEventAsync;
@@ -41,7 +48,13 @@ namespace Twitch.EventSub.Interfaces
         event AsyncEventHandler<PredictionLockEvent> OnPredictionLockEventAsync;
         event AsyncEventHandler<PredictionProgressEvent> OnPredictionProgressEventAsync;
         event AsyncEventHandler<RaidEvent> OnRaidEventAsync;
+        /// <summary>
+        /// Raw messages
+        /// </summary>
         event AsyncEventHandler<string?> OnRawMessageAsync;
+        /// <summary>
+        /// Mandatory event for refreshing Access Token. To Update token use Update procedure of client
+        /// </summary>
         event AsyncEventHandler<InvalidAccessTokenException> OnRefreshTokenAsync;
         event AsyncEventHandler<ShieldModeBeginEvent> OnShieldModeBeginEventAsync;
         event AsyncEventHandler<ShieldModeEndEvent> OnShieldModeEndEventAsync;
@@ -54,6 +67,10 @@ namespace Twitch.EventSub.Interfaces
         event AsyncEventHandler<SubscriptionGiftEvent> OnSubscriptionGiftEventAsync;
         event AsyncEventHandler<SubscriptionMessageEvent> OnSubscriptionMessageEventAsync;
         event AsyncEventHandler<UnBanEvent> OnUnBanEventAsync;
+        /// <summary>
+        /// Notifies about connection termination.
+        /// May contain also internal disconnect, so take with grain of salt
+        /// </summary>
         event EventHandler<string?> OnUnexpectedConnectionTermination;
         event AsyncEventHandler<UpdateNotificationEvent> OnUpdateNotificationEventAsync;
     }
