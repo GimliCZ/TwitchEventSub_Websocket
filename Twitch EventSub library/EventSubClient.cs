@@ -7,13 +7,21 @@ using Twitch.EventSub.User;
 
 namespace Twitch.EventSub
 {
+    /// <summary>
+    /// The EventSubClient class manages the interaction with the Twitch EventSub websocket service,
+    /// allowing the addition, updating, deletion, and management of user event subscriptions.
+    /// </summary>
     public class EventSubClient : IEventSubClient
     {
-        private readonly ILogger _logger;
         private readonly string _clientId;
-        public IEventProvider? this[string key] => GetUserEventProvider(key);
         private readonly ConcurrentDictionary<string, EventProvider> _eventDictionary;
+        private readonly ILogger _logger;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="EventSubClient"/> class.
+        /// </summary>
+        /// <param name="clientId">The client ID.</param>
+        /// <param name="logger">The logger instance.</param>
         public EventSubClient(string clientId, ILogger<EventSubClient> logger)
         {
             _clientId = clientId;
@@ -21,11 +29,32 @@ namespace Twitch.EventSub
             _logger = logger;
             _logger.LogDebug("EventSubClient instantiated with clientId: {ClientId}", clientId);
         }
+
+        /// <summary>
+        /// Indexer to get the event provider for a specific user.
+        /// </summary>
+        /// <param name="key">The user ID.</param>
+        /// <returns>The event provider associated with the user ID.</returns>
+        public IEventProvider? this[string key] => GetUserEventProvider(key);
+
+        /// <summary>
+        /// Gets the event provider for a specific user.
+        /// </summary>
+        /// <param name="userId">The user ID.</param>
+        /// <returns>The event provider associated with the user ID.</returns>
         public IEventProvider? GetUserEventProvider(string userId)
         {
             _eventDictionary.TryGetValue(userId, out var provider);
             return provider;
         }
+
+        /// <summary>
+        /// Adds a new user to the event subscription service, prepares Event Provider.
+        /// </summary>
+        /// <param name="userId">The user ID.</param>
+        /// <param name="accessToken">The access token.</param>
+        /// <param name="listOfSubs">The list of subscription types.</param>
+        /// <returns>A task representing the asynchronous operation, with a result indicating success or failure.</returns>
         public async Task<bool> AddUserAsync(
             string userId,
             string accessToken,
@@ -46,6 +75,14 @@ namespace Twitch.EventSub
             _logger.LogDebug("Attempting to add user");
             return _eventDictionary.TryAdd(userId, eventProvider);
         }
+
+        /// <summary>
+        /// Updates the subscription details for an existing user.
+        /// </summary>
+        /// <param name="userId">The user ID.</param>
+        /// <param name="accessToken">The new access token.</param>
+        /// <param name="listOfSubs">The new list of subscription types.</param>
+        /// <returns>True if the update was successful, false otherwise.</returns>
         public bool UpdateUser(string userId, string accessToken, List<SubscriptionType> listOfSubs)
         {
             if (string.IsNullOrWhiteSpace(userId))
@@ -65,6 +102,11 @@ namespace Twitch.EventSub
             }
         }
 
+        /// <summary>
+        /// Deletes an existing user from the event subscription service.
+        /// </summary>
+        /// <param name="userId">The user ID.</param>
+        /// <returns>A task representing the asynchronous operation, with a result indicating success or failure.</returns>
         public async Task<bool> DeleteUserAsync(string userId)
         {
             _logger.LogDebug("Attempting to delete user with userId: {UserId}", userId);
@@ -85,6 +127,11 @@ namespace Twitch.EventSub
             return false;
         }
 
+        /// <summary>
+        /// Starts the event subscription for a specific user.
+        /// </summary>
+        /// <param name="userId">The user ID.</param>
+        /// <returns>A task representing the asynchronous operation, with a result indicating success or failure.</returns>
         public async Task<bool> StartAsync(string userId)
         {
             _logger.LogDebug("Attempting to start user with userId: {UserId}", userId);
@@ -103,6 +150,11 @@ namespace Twitch.EventSub
             return true;
         }
 
+        /// <summary>
+        /// Stops the event subscription for a specific user.
+        /// </summary>
+        /// <param name="userId">The user ID.</param>
+        /// <returns>A task representing the asynchronous operation, with a result indicating success or failure.</returns>
         public Task<bool> StopAsync(string userId)
         {
             _logger.LogDebug("Attempting to stop user with userId: {UserId}", userId);
@@ -120,6 +172,13 @@ namespace Twitch.EventSub
             _logger.LogDebug("StopAsync succeeded for userId: {UserId}", userId);
             return provider.StopAsync();
         }
+
+        /// <summary>
+        /// Checks if a specific user is connected to the event subscription service.
+        /// This part may be used to detect failed user instances and recover them
+        /// </summary>
+        /// <param name="userId">The user ID.</param>
+        /// <returns>True if the user is connected, false otherwise.</returns>
         public bool IsConnected(string userId)
         {
             _logger.LogDebug("Checking if user is connected with userId: {UserId}", userId);

@@ -5,9 +5,29 @@ using Twitch.EventSub.CoreFunctions;
 
 namespace Twitch.EventSub.User
 {
+    /// <summary>
+    /// Implemenation of API with protections and integrations to rest of library
+    /// </summary>
     public class SubscriptionManager
     {
+        /// <summary>
+        /// Event relaying access token refresh from API
+        /// </summary>
         public event AsyncEventHandler<InvalidAccessTokenException> OnRefreshTokenRequestAsync;
+
+        /// <summary>
+        /// Procedure refreshing subriptions 
+        /// </summary>
+        /// <param name="userId">User ID</param>
+        /// <param name="requestedSubscriptions">Requested Subscriptions</param>
+        /// <param name="clientId">Client ID</param>
+        /// <param name="accessToken">Access Token</param>
+        /// <param name="sessionId">Session Id</param>
+        /// <param name="clSource">Cancelation Source</param>
+        /// <param name="logger">Logger instance</param>
+        /// <returns>Return true if all operations succeed</returns>
+        /// <exception cref="Exception"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
         public async Task<bool> RunCheckAsync(string userId, List<CreateSubscriptionRequest> requestedSubscriptions, string clientId, string accessToken, string sessionId, CancellationTokenSource clSource, ILogger logger)
         {
             foreach (var typeListOfSub in requestedSubscriptions)
@@ -29,7 +49,7 @@ namespace Twitch.EventSub.User
             //remove old connections, old sessions and all subscriptions with error status
             if (clientId == null || accessToken == null)
             {
-                throw new ArgumentNullException();
+                throw new ArgumentNullException(nameof(clientId) + nameof(accessToken));
             }
             var allSubscriptions = await ApiTryGetAllSubscriptionsAsync(clientId, accessToken, userId, clSource, logger, StatusProvider.SubscriptionStatus.Empty);
             //Yes we can get null from subscription function, if something goes horribly wrong.
@@ -109,6 +129,16 @@ namespace Twitch.EventSub.User
             return true;
         }
 
+        /// <summary>
+        /// Clearing procedure
+        /// </summary>
+        /// <param name="clientId">Client ID</param>
+        /// <param name="accessToken">Access Token</param>
+        /// <param name="userId">User Id</param>
+        /// <param name="logger">Logger Instance</param>
+        /// <param name="clSource">Cancelation token source</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException"></exception>
         public async Task ClearAsync(string clientId, string accessToken, string userId, ILogger logger, CancellationTokenSource clSource)
         {
             if (clientId == null)
@@ -151,24 +181,72 @@ namespace Twitch.EventSub.User
             }
         }
 
-        public Task<bool> ApiTryValidateAsync(string accessToken, string userId, ILogger logger, CancellationTokenSource clSource)
+        /// <summary>
+        /// Token Validation call hiden behind access token invalid protection
+        /// </summary>
+        /// <param name="accessToken">Access token</param>
+        /// <param name="userId">User Id</param>
+        /// <param name="logger">Logger instance</param>
+        /// <param name="clSource">Cancelation token source</param>
+        /// <returns>Returns true if token valid</returns>
+        public Task<bool> ApiTryValidateAsync(
+            string accessToken,
+            string userId,
+            ILogger logger,
+            CancellationTokenSource clSource)
         {
             Task<bool> TryValidateAsync() => TwitchApi.ValidateTokenAsync(accessToken, clSource, logger);
             return TryFuncAsync(TryValidateAsync, logger, userId);
         }
 
-        public Task<bool> ApiTrySubscribeAsync(string clientId, string accessToken, CreateSubscriptionRequest create, string userId, ILogger logger, CancellationTokenSource clSource)
+        /// <summary>
+        /// Subscription call hiden behind access token invalid protection
+        /// </summary>
+        /// <param name="clientId"></param>
+        /// <param name="accessToken"></param>
+        /// <param name="create"></param>
+        /// <param name="userId"></param>
+        /// <param name="logger"></param>
+        /// <param name="clSource"></param>
+        /// <returns></returns>
+        public Task<bool> ApiTrySubscribeAsync(
+            string clientId,
+            string accessToken,
+            CreateSubscriptionRequest create,
+            string userId,
+            ILogger logger,
+            CancellationTokenSource clSource)
         {
             Task<bool> TrySubscribeAsync() => TwitchApi.SubscribeAsync(clientId, accessToken, create, clSource, logger);
             return TryFuncAsync(TrySubscribeAsync, logger, userId);
         }
 
+        /// <summary>
+        /// UnSubscribe call hiden behind access token invalid protection
+        /// </summary>
+        /// <param name="clientId">Client ID</param>
+        /// <param name="accessToken">Access Token</param>
+        /// <param name="subId">Identifier of subscription</param>
+        /// <param name="userId">User Id</param>
+        /// <param name="logger">Logger Instance</param>
+        /// <param name="clSource">Cancelation Token Source</param>
+        /// <returns>Returns true, if unsubscribe was successfull</returns>
         private Task<bool> ApiTryUnSubscribeAsync(string clientId, string accessToken, string subId, string userId, ILogger logger, CancellationTokenSource clSource)
         {
             Task<bool> TryUnSubscribeAsync() => TwitchApi.UnSubscribeAsync(clientId, accessToken, subId, clSource, logger);
             return TryFuncAsync(TryUnSubscribeAsync, logger, userId);
         }
 
+        /// <summary>
+        /// Group subscription Request hiden behind access token invalid protection
+        /// </summary>
+        /// <param name="clientId">Client Id</param>
+        /// <param name="accessToken">Access Token</param>
+        /// <param name="userId">User Id</param>
+        /// <param name="clSource">Cancelation Token Source</param>
+        /// <param name="logger">Logger instance</param>
+        /// <param name="statusSelector">Filtration of status</param>
+        /// <returns>Returns all subscriptions requested by filter, on fail returns null</returns>
         private Task<List<GetSubscriptionsResponse>?> ApiTryGetAllSubscriptionsAsync(string clientId, string accessToken, string userId, CancellationTokenSource clSource, ILogger logger, StatusProvider.SubscriptionStatus statusSelector)
         {
             Task<List<GetSubscriptionsResponse>> TryGetAllSubscriptionsAsync() => TwitchApi.GetAllSubscriptionsAsync(clientId, accessToken, clSource, logger, statusSelector);
@@ -182,6 +260,8 @@ namespace Twitch.EventSub.User
         /// </summary>
         /// <typeparam name="TType"></typeparam>
         /// <param name="apiCallAction"></param>
+        /// <param name="logger"></param>
+        /// <param name="UserId">User ID</param>
         /// <returns></returns>
         private async Task<TType?> TryFuncAsync<TType>(Func<Task<TType>> apiCallAction, ILogger logger, string UserId)
         {

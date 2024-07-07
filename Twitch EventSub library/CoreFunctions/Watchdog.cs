@@ -4,18 +4,19 @@ namespace Twitch.EventSub.CoreFunctions
 {
     public class Watchdog
     {
-        private Timer _timerWatchdog;
-        private int _timeout;
-        private bool _isRunning;
         private readonly ILogger _logger;
-
-        public event AsyncEventHandler<string> OnWatchdogTimeout;
+        private bool _isRunning;
+        private int _timeout;
+        private Timer _timerWatchdog;
 
         public Watchdog(ILogger logger)
         {
             _isRunning = false;
             _logger = logger;
         }
+
+        public event AsyncEventHandler<string> OnWatchdogTimeout;
+
         /// <summary>
         /// Starts Watchdog
         /// </summary>
@@ -38,6 +39,7 @@ namespace Twitch.EventSub.CoreFunctions
                 _logger.LogDebug("[EventSubClient] - [Watchdog] Watchdog is already running.");
             }
         }
+
         /// <summary>
         /// Renews timing 
         /// </summary>
@@ -58,6 +60,7 @@ namespace Twitch.EventSub.CoreFunctions
                 _logger.LogDebug("[EventSubClient] - [Watchdog] Watchdog is not running. Please start it first.");
             }
         }
+
         /// <summary>
         /// Stops watchdog
         /// </summary>
@@ -79,6 +82,7 @@ namespace Twitch.EventSub.CoreFunctions
                 _logger.LogDebug("[EventSubClient] - [Watchdog] Watchdog is not running.");
             }
         }
+
         /// <summary>
         /// Triggers when watched time is overdue
         /// </summary>

@@ -11,12 +11,17 @@ namespace Twitch.EventSub.API
     public static class TwitchApi
     {
         private const string BaseUrl = "https://api.twitch.tv/helix/eventsub/subscriptions";
+
+        private const string ValidateUrl = "https://id.twitch.tv/oauth2/validate";
+
         /// <summary>
         /// Function sends filled CreateSubscriptionRequest to twitch for processing
         /// </summary>
         /// <param name="clientId"></param>
         /// <param name="accessToken"></param>
         /// <param name="request"></param>
+        /// <param name="clSource"></param>
+        /// <param name="logger"></param>
         /// <returns>True on success, false on failure</returns>
         /// <exception cref="InvalidAccessTokenException"></exception>
         /// <exception cref="Exception">This state means that accessToken is not set up properly for given request</exception>
@@ -52,6 +57,7 @@ namespace Twitch.EventSub.API
                 }
             }
         }
+
         /// <summary>
         /// Function unsubscribes subs
         /// </summary>
@@ -88,6 +94,7 @@ namespace Twitch.EventSub.API
                 }
             }
         }
+
         /// <summary>
         /// Gets a list of subs
         /// </summary>
@@ -139,6 +146,7 @@ namespace Twitch.EventSub.API
                 }
             }
         }
+
         /// <summary>
         /// Provides entire list of subscriptions, handles pagination.
         /// </summary>
@@ -184,7 +192,6 @@ namespace Twitch.EventSub.API
             return allSubscriptions;
         }
 
-        private const string ValidateUrl = "https://id.twitch.tv/oauth2/validate";
         /// <summary>
         /// Validates the provided Twitch access token.
         /// </summary>

@@ -20,6 +20,7 @@
             //My addition - describes all possible states
             Empty
         }
+
         public static string GetStatusString(SubscriptionStatus status)
         {
             return status switch

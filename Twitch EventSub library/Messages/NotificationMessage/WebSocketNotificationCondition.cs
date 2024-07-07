@@ -6,6 +6,5 @@ namespace Twitch.EventSub.Messages.NotificationMessage
     {
         [JsonProperty("broadcaster_user_id")]
         public string BroadcasterUserId { get; set; }
-
     }
 }

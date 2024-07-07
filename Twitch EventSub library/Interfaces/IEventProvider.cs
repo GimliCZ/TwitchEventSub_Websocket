@@ -6,6 +6,7 @@ namespace Twitch.EventSub.Interfaces
 {
     public interface IEventProvider
     {
+        bool IsConnected { get; }
         event AsyncEventHandler<BanEvent> OnBanEventAsync;
         event AsyncEventHandler<FollowEvent> OnFollowEventAsync;
         event AsyncEventHandler<GoalBeginEvent> OnGoalBeginEventAsync;
@@ -55,6 +56,5 @@ namespace Twitch.EventSub.Interfaces
         event AsyncEventHandler<UnBanEvent> OnUnBanEventAsync;
         event EventHandler<string?> OnUnexpectedConnectionTermination;
         event AsyncEventHandler<UpdateNotificationEvent> OnUpdateNotificationEventAsync;
-        bool IsConnected { get; }
     }
 }

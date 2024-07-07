@@ -231,6 +231,7 @@ namespace Twitch.EventSub.User
             }
             return resultMessage;
         }
+
         public static async Task<WebSocketMessage> DeserializeMessageAsync(string message)
         {
             using (JsonTextReader reader = new JsonTextReader(new StringReader(message)))

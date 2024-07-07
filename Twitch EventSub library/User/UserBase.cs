@@ -1,4 +1,5 @@
 ﻿using Stateless;
+using Stateless.Graph;
 using Twitch.EventSub.API.Models;
 using Websocket.Client;
 
@@ -6,95 +7,6 @@ namespace Twitch.EventSub.User
 {
     public abstract class UserBase
     {
-        public const string DefaultWebSocketUrl = "wss://eventsub.wss.twitch.tv/ws";
-        public Uri Url { get; set; }
-        public UserState State { get; set; }
-        public WebsocketClient Socket { get; set; }
-        public string UserId { get; protected set; }
-        public string SessionId { get; set; }
-        public string Conduit { get; set; }
-        public string AccessToken { get; protected set; }
-        public Stateless.StateMachine<UserState, UserActions> StateMachine { get; set; }
-        public CancellationTokenSource ManagerCancelationSource { get; set; }
-
-        //TODO: Make global
-        public string ClientId { get; set; }
-
-        public List<CreateSubscriptionRequest> RequestedSubscriptions;
-        public InvalidAccessTokenException? LastAccessViolationException { get; set; }
-        internal event EventHandler<string?> OnDispose;
-
-        public UserBase(string id, string access, List<CreateSubscriptionRequest> requestedSubscriptions)
-        {
-            State = UserState.Registred;
-            Socket = new WebsocketClient(Url ?? new Uri(DefaultWebSocketUrl));
-            Socket.IsReconnectionEnabled = false;
-            UserId = id;
-            AccessToken = access;
-            StateMachine = new Stateless.StateMachine<UserState, UserActions>(() => State, s => State = s);
-            StateMachineCofiguration(StateMachine);
-            ManagerCancelationSource = new CancellationTokenSource();
-            RequestedSubscriptions = requestedSubscriptions;
-        }
-
-        public bool IsDisposed()
-        {
-            return StateMachine.State == UserState.Disposed;
-        }
-        public async Task StartAsync()
-        {
-            await StateMachine.ActivateAsync();
-
-            if (StateMachine.State == UserState.Registred)
-            {
-                await StateMachine.FireAsync(UserActions.AccessTesting);
-            }
-        }
-        public bool Update(string access, List<CreateSubscriptionRequest> requestedSubscriptions)
-        {
-            if (State == UserState.Awaiting ||
-                State == UserState.AwaitNewTokenAfterFailedTest ||
-                State == UserState.AwaitNewTokenAfterFailedHandShake ||
-                State == UserState.AwaitNewTokenAfterFailedRun)
-            {
-                AccessToken = access;
-                RequestedSubscriptions = requestedSubscriptions;
-                return true;
-            }
-            return false;
-        }
-        public async Task<bool> StopAsync()
-        {
-            if (StateMachine.State == UserState.Disposed)
-            {
-                return true;
-            }
-            if (StateMachine.CanFire(UserActions.Stop))
-            {
-                await StateMachine.FireAsync(UserActions.Stop);
-                return true;
-            }
-            return false;
-        }
-        public enum UserState
-        {
-            //Inicial condition is registred, since we add to list 
-            Registred,
-            InicialAccessTest,
-            Websocket,
-            WellcomeMessage,
-            HandShake,
-            Running,
-            Awaiting,
-            Reconnecting,
-            AwaitNewTokenAfterFailedTest,
-            AwaitNewTokenAfterFailedHandShake,
-            AwaitNewTokenAfterFailedRun,
-            Stoping,
-            Failing,
-            Disposed
-        }
-
         public enum UserActions
         {
             AccessTesting,
@@ -120,6 +32,102 @@ namespace Twitch.EventSub.User
             Stop,
             Fail,
             Dispose
+        }
+
+        public enum UserState
+        {
+            //Inicial condition is registred, since we add to list 
+            Registred,
+            InicialAccessTest,
+            Websocket,
+            WellcomeMessage,
+            HandShake,
+            Running,
+            Awaiting,
+            Reconnecting,
+            AwaitNewTokenAfterFailedTest,
+            AwaitNewTokenAfterFailedHandShake,
+            AwaitNewTokenAfterFailedRun,
+            Stoping,
+            Failing,
+            Disposed
+        }
+
+        public const string DefaultWebSocketUrl = "wss://eventsub.wss.twitch.tv/ws";
+
+        public List<CreateSubscriptionRequest> RequestedSubscriptions;
+
+        public UserBase(string id, string access, List<CreateSubscriptionRequest> requestedSubscriptions)
+        {
+            State = UserState.Registred;
+            Socket = new WebsocketClient(Url ?? new Uri(DefaultWebSocketUrl));
+            Socket.IsReconnectionEnabled = false;
+            UserId = id;
+            AccessToken = access;
+            StateMachine = new Stateless.StateMachine<UserState, UserActions>(() => State, s => State = s);
+            StateMachineCofiguration(StateMachine);
+            ManagerCancelationSource = new CancellationTokenSource();
+            RequestedSubscriptions = requestedSubscriptions;
+            //string graph = UmlDotGraph.Format(StateMachine.GetInfo());
+            //Console.WriteLine(graph);
+        }
+
+        public Uri Url { get; set; }
+        public UserState State { get; set; }
+        public WebsocketClient Socket { get; set; }
+        public string UserId { get; protected set; }
+        public string SessionId { get; set; }
+        public string Conduit { get; set; }
+        public string AccessToken { get; protected set; }
+        public Stateless.StateMachine<UserState, UserActions> StateMachine { get; set; }
+        public CancellationTokenSource ManagerCancelationSource { get; set; }
+
+        //TODO: Make global
+        public string ClientId { get; set; }
+        public InvalidAccessTokenException? LastAccessViolationException { get; set; }
+        internal event EventHandler<string?> OnDispose;
+
+        public bool IsDisposed()
+        {
+            return StateMachine.State == UserState.Disposed;
+        }
+
+        public async Task StartAsync()
+        {
+            await StateMachine.ActivateAsync();
+
+            if (StateMachine.State == UserState.Registred)
+            {
+                await StateMachine.FireAsync(UserActions.AccessTesting);
+            }
+        }
+
+        public bool Update(string access, List<CreateSubscriptionRequest> requestedSubscriptions)
+        {
+            if (State == UserState.Awaiting ||
+                State == UserState.AwaitNewTokenAfterFailedTest ||
+                State == UserState.AwaitNewTokenAfterFailedHandShake ||
+                State == UserState.AwaitNewTokenAfterFailedRun)
+            {
+                AccessToken = access;
+                RequestedSubscriptions = requestedSubscriptions;
+                return true;
+            }
+            return false;
+        }
+
+        public async Task<bool> StopAsync()
+        {
+            if (StateMachine.State == UserState.Disposed)
+            {
+                return true;
+            }
+            if (StateMachine.CanFire(UserActions.Stop))
+            {
+                await StateMachine.FireAsync(UserActions.Stop);
+                return true;
+            }
+            return false;
         }
 
         private void StateMachineCofiguration(Stateless.StateMachine<UserState, UserActions> machine)
@@ -197,6 +205,7 @@ namespace Twitch.EventSub.User
 
         protected abstract Task FailProcedureAsync();
         protected abstract Task StopProcedureAsync();
+
         private async Task DisposeProcedureAsync()
         {
             Socket.Dispose();
@@ -206,13 +215,12 @@ namespace Twitch.EventSub.User
         }
 
         protected abstract Task AwaitManagerAsync();
-        
+
         protected abstract Task AwaitWelcomeMessageAsync();
         protected abstract Task InicialAccessTokenAsync();
         protected abstract Task NewAccessTokenRequestAsync();
         protected abstract Task RunManagerAsync();
         protected abstract Task RunHandshakeAsync();
         protected abstract Task RunWebsocketAsync();
-
     }
 }
