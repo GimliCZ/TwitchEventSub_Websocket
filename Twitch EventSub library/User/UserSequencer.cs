@@ -62,7 +62,7 @@ namespace Twitch.EventSub.User
 
         public event CoreFunctions.AsyncEventHandler<string?> OnRawMessageRecievedAsync;
         public event CoreFunctions.AsyncEventHandler<string?> OnOutsideDisconnectAsync;
-        public event CoreFunctions.AsyncEventHandler<InvalidAccessTokenException> AccessTokenRequestedEvent;
+        public event CoreFunctions.AsyncEventHandler<RefreshRequestArgs> AccessTokenRequestedEvent;
         public event CoreFunctions.AsyncEventHandler<WebSocketNotificationPayload> OnNotificationMessageAsync;
 
         /// <summary>
@@ -81,7 +81,7 @@ namespace Twitch.EventSub.User
         }
 
         /// <summary>
-        /// Executes the handshake process, validating initial subscriptions.
+        /// Executes the handshake process, validating initial subscriptions.enException
         /// </summary>
         protected override async Task RunHandshakeAsync()
         {
@@ -120,10 +120,10 @@ namespace Twitch.EventSub.User
         /// <param name="e"></param>
         /// <returns></returns>
         /// <exception cref="InvalidOperationException">Exception containing user ID and time of exception</exception>
-        private async Task OnRefreshTokenRequestAsync(object sender, InvalidAccessTokenException e)
+        private async Task OnRefreshTokenRequestAsync(object sender, RefreshRequestArgs e)
         {
             _logger.LogDebug($"RefreshToken request: {e}");
-            if (UserId != e.SourceUserId)
+            if (UserId != e.UserId)
             {
                 _logger.LogError("[OnRefreshTokenRequestAsync] SourceUserId does not match UserId: {UserId}", UserId);
                 return;
@@ -144,7 +144,7 @@ namespace Twitch.EventSub.User
                     _logger.LogDebug($"[OnRefreshTokenRequestAsync] Invoking Handshake access token renew procedure {e}");
                     await StateMachine.FireAsync(UserActions.HandShakeAccessFail);
                     break;
-                case UserState.InicialAccessTest:
+                case UserState.InitialAccessTest:
                     _logger.LogDebug($"[OnRefreshTokenRequestAsync] Invoking Test access token renew procedure {e}");
                     await StateMachine.FireAsync(UserActions.AccessFailed);
                     break;
@@ -338,25 +338,25 @@ namespace Twitch.EventSub.User
         }
 
         /// <summary>
-        /// Procedure for inicial testing of access token
+        /// Procedure for Initial testing of access token
         /// </summary>
         /// <returns></returns>
-        protected override async Task InicialAccessTokenAsync()
+        protected override async Task InitialAccessTokenAsync()
         {
             {
-                _logger.LogDebug("[InicialAccessTokenAsync] Validating initial access token for UserId: {UserId}", UserId);
+                _logger.LogDebug("[InitialAccessTokenAsync] Validating initial access token for UserId: {UserId}", UserId);
                 using (CancellationTokenSource cts = new CancellationTokenSource(AccessTokenValidationTolerance))
                 {
                     
                     var validationResult = await _subscriptionManager.ApiTryValidateAsync(AccessToken,UserId, _logger, cts);
                     if (validationResult)
                     {
-                        _logger.LogDebug("[InicialAccessTokenAsync] Initial access token validated for UserId: {UserId}", UserId);
+                        _logger.LogDebug("[InitialAccessTokenAsync] Initial access token validated for UserId: {UserId}", UserId);
                         await StateMachine.FireAsync(UserActions.AccessSuccess);
                     }
                     else
                     {
-                        _logger.LogDebug("[InicialAccessTokenAsync] Initial access token validation failed for UserId: {UserId}", UserId);
+                        _logger.LogDebug("[InitialAccessTokenAsync] Initial access token validation failed for UserId: {UserId}", UserId);
                         await StateMachine.FireAsync(UserActions.AccessFailed);
                     }
                 }
@@ -389,7 +389,7 @@ namespace Twitch.EventSub.User
                     {
                         case UserState.AwaitNewTokenAfterFailedTest:
                             _logger.LogDebug($"[NewAccessTokenRequestAsync] Returning to Test after Access Token renew {invalidToken}");
-                            await StateMachine.FireAsync(UserActions.NewTokenProvidedReturnToInicialTest);
+                            await StateMachine.FireAsync(UserActions.NewTokenProvidedReturnToInitialTest);
                             break;
                         case UserState.AwaitNewTokenAfterFailedHandShake:
                             _logger.LogDebug($"[NewAccessTokenRequestAsync] Returning to Handshake after Access Token renew {invalidToken}");

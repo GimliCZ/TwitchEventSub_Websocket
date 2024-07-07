@@ -13,7 +13,7 @@ namespace Twitch.EventSub.User
         /// <summary>
         /// Event relaying access token refresh from API
         /// </summary>
-        public event AsyncEventHandler<InvalidAccessTokenException> OnRefreshTokenRequestAsync;
+        public event AsyncEventHandler<RefreshRequestArgs> OnRefreshTokenRequestAsync;
 
         /// <summary>
         /// Procedure refreshing subriptions 
@@ -271,10 +271,9 @@ namespace Twitch.EventSub.User
             }
             catch (InvalidAccessTokenException ex)
             {
-                ex.SourceUserId = UserId;
                 //procedure must run UpdateOnFly function for proper change
                 logger.LogInformationDetails("[EventSubClient] - [SubscriptionManager] Invalid Access token detected, requesting change.", ex);
-                await OnRefreshTokenRequestAsync.TryInvoke(this, ex);
+                await OnRefreshTokenRequestAsync.TryInvoke(this, new RefreshRequestArgs{ UserId = UserId, DateTime = DateTime.Now });
             }
             catch (TaskCanceledException)
             {

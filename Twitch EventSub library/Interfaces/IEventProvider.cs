@@ -55,7 +55,7 @@ namespace Twitch.EventSub.Interfaces
         /// <summary>
         /// Mandatory event for refreshing Access Token. To Update token use Update procedure of client
         /// </summary>
-        event AsyncEventHandler<InvalidAccessTokenException> OnRefreshTokenAsync;
+        event AsyncEventHandler<RefreshRequestArgs> OnRefreshTokenAsync;
         event AsyncEventHandler<ShieldModeBeginEvent> OnShieldModeBeginEventAsync;
         event AsyncEventHandler<ShieldModeEndEvent> OnShieldModeEndEventAsync;
         event AsyncEventHandler<ShoutoutCreateEvent> OnShoutoutCreateEventAsync;

@@ -23,7 +23,7 @@ namespace Twitch.EventSub.User
             RunningProceed,
             RunningAccessFail,
             ReconnectRequested,
-            NewTokenProvidedReturnToInicialTest,
+            NewTokenProvidedReturnToInitialTest,
             NewTokenProvidedReturnToHandShake,
             NewTokenProvidedReturnToRunning,
             AwaitNewTokenFailed,
@@ -36,9 +36,9 @@ namespace Twitch.EventSub.User
 
         public enum UserState
         {
-            //Inicial condition is registred, since we add to list 
+            //Initial condition is registred, since we add to list 
             Registred,
-            InicialAccessTest,
+            InitialAccessTest,
             Websocket,
             WellcomeMessage,
             HandShake,
@@ -84,7 +84,7 @@ namespace Twitch.EventSub.User
 
         //TODO: Make global
         public string ClientId { get; set; }
-        public InvalidAccessTokenException? LastAccessViolationException { get; set; }
+        public RefreshRequestArgs? LastAccessViolationException { get; set; }
         internal event EventHandler<string?> OnDispose;
 
         public bool IsDisposed()
@@ -134,10 +134,10 @@ namespace Twitch.EventSub.User
         {
             //If User is pressent within list, Try to test his access
             machine.Configure(UserState.Registred)
-                .Permit(UserActions.AccessTesting, UserState.InicialAccessTest);
+                .Permit(UserActions.AccessTesting, UserState.InitialAccessTest);
             //If result of testing is good, try to establish connection, else, request new token
-            machine.Configure(UserState.InicialAccessTest)
-                .OnEntryAsync(InicialAccessTokenAsync)
+            machine.Configure(UserState.InitialAccessTest)
+                .OnEntryAsync(InitialAccessTokenAsync)
                 .Permit(UserActions.AccessSuccess, UserState.Websocket)
                 .Permit(UserActions.AccessFailed, UserState.AwaitNewTokenAfterFailedTest);
             //Try to establish connection, if succeeds, try to complete handshake, else, fail
@@ -180,7 +180,7 @@ namespace Twitch.EventSub.User
             //If NewAcessToken Requested, Start timer and 
             machine.Configure(UserState.AwaitNewTokenAfterFailedTest)
                 .OnEntryAsync(NewAccessTokenRequestAsync)
-                .Permit(UserActions.NewTokenProvidedReturnToInicialTest, UserState.InicialAccessTest)
+                .Permit(UserActions.NewTokenProvidedReturnToInitialTest, UserState.InitialAccessTest)
                 .Permit(UserActions.AwaitNewTokenFailed, UserState.Stoping);
             machine.Configure(UserState.AwaitNewTokenAfterFailedHandShake)
                 .OnEntryAsync(NewAccessTokenRequestAsync)
@@ -217,7 +217,7 @@ namespace Twitch.EventSub.User
         protected abstract Task AwaitManagerAsync();
 
         protected abstract Task AwaitWelcomeMessageAsync();
-        protected abstract Task InicialAccessTokenAsync();
+        protected abstract Task InitialAccessTokenAsync();
         protected abstract Task NewAccessTokenRequestAsync();
         protected abstract Task RunManagerAsync();
         protected abstract Task RunHandshakeAsync();

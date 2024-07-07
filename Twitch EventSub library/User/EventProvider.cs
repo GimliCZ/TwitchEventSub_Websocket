@@ -56,7 +56,7 @@ namespace Twitch.EventSub.User
         /// <summary>
         /// Mandatory event for refreshing Access Token. To Update token use Update procedure of client
         /// </summary>
-        public event AsyncEventHandler<InvalidAccessTokenException> OnRefreshTokenAsync;
+        public event AsyncEventHandler<RefreshRequestArgs> OnRefreshTokenAsync;
 
         /// <summary>
         /// Raw messages
@@ -173,7 +173,7 @@ namespace Twitch.EventSub.User
         /// </summary>
         /// <param name="ex"></param>
         /// <returns></returns>
-        private async Task AccessTokenRequestedEventAsync(object sender, InvalidAccessTokenException ex)
+        private async Task AccessTokenRequestedEventAsync(object sender, RefreshRequestArgs ex)
         {
             await OnRefreshTokenAsync.TryInvoke(sender, ex);
         }

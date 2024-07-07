@@ -2,8 +2,8 @@
 {
     public class InvalidAccessTokenException : Exception
     {
-        public DateTime Date;
-        public string SourceUserId = string.Empty;
+        public DateTime Date { get; }
+        public string SourceUserId { get; init; }
 
         public InvalidAccessTokenException()
         {
