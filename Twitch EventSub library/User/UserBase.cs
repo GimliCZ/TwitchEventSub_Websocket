@@ -84,7 +84,7 @@ namespace Twitch.EventSub.User
 
         //TODO: Make global
         public string ClientId { get; set; }
-        public RefreshRequestArgs? LastAccessViolationException { get; set; }
+        public RefreshRequestArgs? LastAccessViolationArgs { get; set; }
         internal event EventHandler<string?> OnDispose;
 
         public bool IsDisposed()

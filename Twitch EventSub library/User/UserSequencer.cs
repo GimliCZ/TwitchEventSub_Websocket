@@ -132,7 +132,7 @@ namespace Twitch.EventSub.User
             {
                 _logger.LogError("[OnRefreshTokenRequestAsync] Got Null Invalid Access Token Exception");
             }
-            LastAccessViolationException = e;
+            LastAccessViolationArgs = e;
             _logger.LogDebug("[OnRefreshTokenRequestAsync] InvalidAccessTokenException received for UserId: {UserId}, State: {State}", UserId, StateMachine.State);
             switch (StateMachine.State)
             {
@@ -374,11 +374,11 @@ namespace Twitch.EventSub.User
             using (var cls = new CancellationTokenSource(NewAccessTokenRequestDelay)) { 
                 _logger.LogDebug("[NewAccessTokenRequestAsync] Requesting new access token for UserId: {UserId}", UserId);
                 await _awaitRefresh.WaitAsync(cls.Token);
-                if (LastAccessViolationException != null)
+                if (LastAccessViolationArgs != null)
                 {
                     var invalidToken = AccessToken;
-                    await AccessTokenRequestedEvent.TryInvoke(this, LastAccessViolationException);
-                    _logger.LogErrorDetails("[EventSubClient] - [UserSequencer] Directly edit current object AccessToken", LastAccessViolationException);
+                    await AccessTokenRequestedEvent.TryInvoke(this, LastAccessViolationArgs);
+                    _logger.LogErrorDetails("[EventSubClient] - [UserSequencer] Directly edit current object AccessToken", LastAccessViolationArgs);
                     var NewToken = AccessToken;
                     if (invalidToken == NewToken)
                     {
@@ -406,7 +406,7 @@ namespace Twitch.EventSub.User
                 }
                 else
                 {
-                    _logger.LogErrorDetails("[EventSubClient] - [UserSequencer] Request for New Access token didnt contain valid exception", LastAccessViolationException);
+                    _logger.LogErrorDetails("[EventSubClient] - [UserSequencer] Request for New Access token didnt contain valid exception", LastAccessViolationArgs);
                     await StateMachine.FireAsync(UserActions.AwaitNewTokenFailed);
                 }
             }
