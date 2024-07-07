@@ -137,6 +137,8 @@ private async void RecoveryRoutineAsync()
     }
 }
 ```
+## STATE DIAGRAM
+![Alt text](https://github.com/GimliCZ/TwitchEventSub_Websocket/blob/feature/ReworkAndConduit/graphviz.png)
 
 ## License
 This project is available under the MIT license. See the LICENSE file for more info.
