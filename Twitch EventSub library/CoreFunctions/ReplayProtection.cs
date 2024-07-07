@@ -8,13 +8,15 @@ namespace Twitch.EventSub.CoreFunctions
     public class ReplayProtection
     {
         private static readonly string format = "MM/dd/yyyy HH:mm:ss";
-        private readonly Queue<string>? _rememberedMessages; //better performance for small sizes
         private readonly int _memoryMaxSize;
+        private readonly Queue<string>? _rememberedMessages; //better performance for small sizes
+
         public ReplayProtection(int messagesToRemember)
         {
             _memoryMaxSize = messagesToRemember;
             _rememberedMessages = new Queue<string>();
         }
+
         public bool IsDuplicate(string data)
         {
             if (_rememberedMessages?.Contains(data) == true)

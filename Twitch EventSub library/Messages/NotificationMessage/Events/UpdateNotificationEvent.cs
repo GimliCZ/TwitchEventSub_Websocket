@@ -18,6 +18,5 @@ namespace Twitch.EventSub.Messages.NotificationMessage.Events
 
         [JsonProperty("content_classification_labels")]
         public List<string> ContentClassificationLabels { get; set; }
-
     }
 }
