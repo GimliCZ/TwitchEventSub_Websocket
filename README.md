@@ -1,4 +1,4 @@
-# TwitchEventSub_Websocket
+# Twitch EventSub Websocket
 <p align="center">
   <img src="https://buildstats.info/nuget/Twitch.EventSub.Websocket" style="max-height: 300px;" alt="Platform: iOS">
   <img src="https://img.shields.io/badge/Platform-.NET%208-orange.svg"style="max-height: 300px;" alt="Platform: iOS">
@@ -20,7 +20,7 @@
 * **AccessToken** is token requested via bearer token of user
 * TwitchEventSub Library contains set of enums **SubscriptionType** which are setting contens of list of subscriptions
 
-#### INICIALIZATION
+#### INITIALIZATION
 ```csharp
 EventSubClient(ClientId, logger);
 ```
@@ -137,6 +137,8 @@ private async void RecoveryRoutineAsync()
     }
 }
 ```
+## STATE DIAGRAM
+![Alt text](https://github.com/GimliCZ/TwitchEventSub_Websocket/blob/feature/ReworkAndConduit/graphviz.png)
 
 ## License
 This project is available under the MIT license. See the LICENSE file for more info.
