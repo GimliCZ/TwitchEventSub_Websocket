@@ -20,7 +20,7 @@
 * **AccessToken** is token requested via bearer token of user
 * TwitchEventSub Library contains set of enums **SubscriptionType** which are setting contens of list of subscriptions
 
-#### INICIALIZATION
+#### INITIALIZATION
 ```csharp
 EventSubClient(ClientId, logger);
 ```
