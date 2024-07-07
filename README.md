@@ -1,52 +1,142 @@
 # TwitchEventSub_Websocket
 <p align="center">
   <img src="https://buildstats.info/nuget/Twitch.EventSub.Websocket" style="max-height: 300px;" alt="Platform: iOS">
-  <img src="https://img.shields.io/badge/Platform-.NET%206-orange.svg"style="max-height: 300px;" alt="Platform: iOS">
+  <img src="https://img.shields.io/badge/Platform-.NET%208-orange.svg"style="max-height: 300px;" alt="Platform: iOS">
+  <img src="https://img.shields.io/github/license/GimliCZ/TwitchEventSub_Websocket" alt="License">
+  <br />
+  <img src="https://img.shields.io/github/issues/GimliCZ/TwitchEventSub_Websocket" alt="Issues">
+  <img src="https://img.shields.io/github/stars/GimliCZ/TwitchEventSub_Websocket" alt="Stars">
+  <img src="https://img.shields.io/github/forks/GimliCZ/TwitchEventSub_Websocket" alt="Forks">
+  <img src="https://img.shields.io/github/last-commit/GimliCZ/TwitchEventSub_Websocket" alt="Last Commit">
 </p>
 
-## About
-Handles comunication with twitch eventsub via websocket
+# About
+* Handles multiple user communications with Twitch Eventsub via websocket 
+* For more information on Twitch EventSub, refer to the [Twitch EventSub Documentation](https://dev.twitch.tv/docs/eventsub/).
 
 ## Implementation
+* **Client Id** is identifier of your aplication
+* **User Id** is identifier of twitch user
+* **AccessToken** is token requested via bearer token of user
+* TwitchEventSub Library contains set of enums **SubscriptionType** which are setting contens of list of subscriptions
 
-#### Start Function
+#### INICIALIZATION
 ```csharp
-var listOfSubs = new List<SubscriptionType>
+EventSubClient(ClientId, logger);
+```
+#### SETUP
+```csharp
+public async Task<bool> SetupAsync(string UserId)
 {
-   SubscriptionType.ChannelFollow
-};
-eventSubClient.OnFollowEvent -= EventSubClientOnFollowEvent;
-eventSubClient.OnFollowEvent += EventSubClientOnFollowEvent;
-eventSubClient.Start(clientId,userId, accessToken, listOfSubs);
+    var listOfSubs = new List<SubscriptionType>
+    {
+        // Add requested subscriptions
+        SubscriptionType.ChannelFollow
+    };
+    _listOfSubs = listOfSubs;
+
+    var resultAdd = await _eventSubClient.AddUserAsync(
+        UserId,
+        GetApiToken(),
+        _listOfSubs).ConfigureAwait(false);
+
+    if (resultAdd) 
+    { 
+        SetupEvents();
+    }
+    return resultAdd;
+}
+```
+#### EVENT SUBSCRIPTIONS
+```csharp
+private void SetupEvents()
+{
+    var provider = _eventSubClient[_eventSubUserId];
+    if (provider == null)
+    {
+        _logger.LogError("EventSub Provider returned null for user {UserId}", _eventSubUserId);
+        return;
+    }
+
+    provider.OnRefreshTokenAsync -= EventSubClientOnRefreshTokenAsync;
+    provider.OnRefreshTokenAsync += EventSubClientOnRefreshTokenAsync;
+    provider.OnFollowEventAsync -= EventSubClientOnFollowEventAsync;
+    provider.OnFollowEventAsync += EventSubClientOnFollowEventAsync;
+    provider.OnUnexpectedConnectionTermination -= EventSubClientOnUnexpectedConnectionTermination;
+    provider.OnUnexpectedConnectionTermination += EventSubClientOnUnexpectedConnectionTermination;
+
+#if DEBUG
+    // Print RAW messages only during DEBUG
+    provider.OnRawMessageAsync -= EventSubClientOnRawMessageAsync;
+    provider.OnRawMessageAsync += EventSubClientOnRawMessageAsync;
+#endif
+}
 ```
 
-* Client Id is identifier of your aplication
-* User Id is identifier of twitch user
-* AccessToken is token requested via bearer token of user
-* TwitchEventSub Library contains set of enums SubscriptionType which are setting contens of list of subscriptions
-#### Stop Function
+#### START FUNCTION
 ```csharp
-await eventSubClient.Stop();
+await _eventSubClient.StartAsync(ownerId).ConfigureAwait(false);
 ```
-#### Authorization
+
+#### STOP FUNCTION
+```csharp
+await _eventSubClient.StopAsync(_eventSubUserId).ConfigureAwait(false);
+```
+
+#### AUTHORIZATION
 * **EventSub does not provide refresh token capabilities. You have to provide your own.**
-* To function properly, you are required to subscribe to EventSubClientOnRefreshToken event in order to refresh token
+* To function properly, you are required to subscribe to **EventSubClientOnRefreshToken** event in order to refresh token
 ```csharp
-eventSubClient.OnRefreshToken -= EventSubClientOnRefreshToken;
-eventSubClient.OnRefreshToken += EventSubClientOnRefreshToken;
+provider.OnRefreshTokenAsync -= EventSubClientOnRefreshTokenAsync;
+provider.OnRefreshTokenAsync += EventSubClientOnRefreshTokenAsync;
 ```
-* Then run your token refreshing function
+* Then run your token refreshing function and pass new token
 ```csharp
-await RefreshAccessTokenAsync();
-await eventSubClient.UpdateOnFly(clientId, userId, accessToken, listOfSubs);
+private async Task EventSubClientOnRefreshTokenAsync(object sender, InvalidAccessTokenException e)
+{
+    _logger.LogInformation("Event Sub Attempting to refresh access token");
+    _eventSubClient.UpdateUser(
+        UserId,
+        newAccessToken(),
+        _listOfSubs
+    );
+}
 ```
-#### Reconnection
-* You may also listen to Unexpected Connetion Termination
-```csharp
-eventSubClient.OnUnexpectedConnectionTermination -= EventSubClientOnUnexpectedConnectionTermination;
-eventSubClient.OnUnexpectedConnectionTermination += EventSubClientOnUnexpectedConnectionTermination;
+#### RECOVERY
+* During processing of users you may listen to **IsConnected** flag and **EventSubClientOnFollowEventAsync** to make sure client is working.
+* On unexpected client can happen during stream termination, so make sure you detect it and stop client before you get external disconnect.
+* Then you can do two things, You may completely remove entire user object. Or you may try to Start it again (Works only in disposed state). 
+``` csharp
+private async void RecoveryRoutineAsync()
+{
+    try
+    {
+        if (_eventSubClient.IsConnected(_eventSubUserId))
+        {
+            _logger.LogDebug("EventSubClient is already connected, skip recovery procedure");
+            return;
+        }
+
+        _eventSubClient[_eventSubUserId].OnRefreshTokenAsync -= EventSubClientOnRefreshTokenAsync;
+        _eventSubClient[_eventSubUserId].OnFollowEventAsync -= EventSubClientOnFollowEventAsync;
+        _eventSubClient[_eventSubUserId].OnUnexpectedConnectionTermination -= EventSubClientOnUnexpectedConnectionTermination;
+        _eventSubClient[_eventSubUserId].OnRawMessageAsync -= EventSubClientOnRawMessageAsync;
+
+        var deletionCheck = await _eventSubClient.DeleteUserAsync(_eventSubUserId);
+        if (!deletionCheck)
+        {
+            _logger.LogWarning("EventSub user was NOT gracefully terminated during reconnect attempt");
+        }
+
+        await SetupAsync(_eventSubUserId).ConfigureAwait(false);
+        await _eventSubClient.StartAsync(ownerId).ConfigureAwait(false);
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "EventSubClientRecoveryRoutineAsync failed");
+    }
+}
 ```
-This can trigger your own procedure which could restart entire client or log what happened.
 
 ## License
 This project is available under the MIT license. See the LICENSE file for more info.
