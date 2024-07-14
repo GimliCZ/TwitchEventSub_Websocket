@@ -128,7 +128,7 @@ namespace Twitch.EventSub.User
                 _logger.LogError("[OnRefreshTokenRequestAsync] SourceUserId does not match UserId: {UserId}", UserId);
                 return;
             }
-            if (e is null) 
+            if (e is null)
             {
                 _logger.LogError("[OnRefreshTokenRequestAsync] Got Null Invalid Access Token Exception");
             }
@@ -266,8 +266,8 @@ namespace Twitch.EventSub.User
         private async Task OnServerSideTerminationAsync(UserSequencer userSequencer, DisconnectionInfo disconnectInfo)
         {
             _watchdog.Stop();
-            
-            if (disconnectInfo.Type == DisconnectionType.ByUser) 
+
+            if (disconnectInfo.Type == DisconnectionType.ByUser)
             {
                 _logger.LogInformation("[EventSubClient] - [UserSequencer] Socket correctly disconnected");
                 return;
@@ -347,8 +347,8 @@ namespace Twitch.EventSub.User
                 _logger.LogDebug("[InitialAccessTokenAsync] Validating initial access token for UserId: {UserId}", UserId);
                 using (CancellationTokenSource cts = new CancellationTokenSource(AccessTokenValidationTolerance))
                 {
-                    
-                    var validationResult = await _subscriptionManager.ApiTryValidateAsync(AccessToken,UserId, _logger, cts);
+
+                    var validationResult = await _subscriptionManager.ApiTryValidateAsync(AccessToken, UserId, _logger, cts);
                     if (validationResult)
                     {
                         _logger.LogDebug("[InitialAccessTokenAsync] Initial access token validated for UserId: {UserId}", UserId);
@@ -371,7 +371,8 @@ namespace Twitch.EventSub.User
         /// <exception cref="InvalidOperationException"></exception>
         protected override async Task NewAccessTokenRequestAsync()
         {
-            using (var cls = new CancellationTokenSource(NewAccessTokenRequestDelay)) { 
+            using (var cls = new CancellationTokenSource(NewAccessTokenRequestDelay))
+            {
                 _logger.LogDebug("[NewAccessTokenRequestAsync] Requesting new access token for UserId: {UserId}", UserId);
                 await _awaitRefresh.WaitAsync(cls.Token);
                 if (LastAccessViolationArgs != null)
@@ -604,6 +605,12 @@ namespace Twitch.EventSub.User
         protected override async Task FailProcedureAsync()
         {
             _logger.LogDebug("[FailProcedureAsync] Failing procedure for UserId: {UserId}", UserId);
+            await StopManagerAsync();
+            _watchdog.Stop();
+            if (Socket.IsRunning)
+            {
+                await Socket.Stop(WebSocketCloseStatus.NormalClosure, "Closing");
+            }
             await StateMachine.FireAsync(UserActions.Dispose);
         }
     }
