@@ -267,7 +267,7 @@ namespace Twitch.EventSub.User
         {
             _watchdog.Stop();
             
-            if (StateMachine.State == UserState.Stoping) 
+            if (disconnectInfo.Type == DisconnectionType.ByUser) 
             {
                 _logger.LogInformation("[EventSubClient] - [UserSequencer] Socket correctly disconnected");
                 return;

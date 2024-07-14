@@ -200,7 +200,8 @@ namespace Twitch.EventSub.User
                 .OnEntryAsync(FailProcedureAsync)
                 .Permit(UserActions.Dispose, UserState.Disposed);
             machine.Configure(UserState.Disposed)
-                .OnEntryAsync(DisposeProcedureAsync);
+                .OnEntryAsync(DisposeProcedureAsync)
+                .Ignore(UserActions.RunningProceed);
         }
 
         protected abstract Task FailProcedureAsync();
