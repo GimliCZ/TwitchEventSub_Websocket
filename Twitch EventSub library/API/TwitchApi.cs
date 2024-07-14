@@ -1,8 +1,10 @@
-﻿using System.Net;
+﻿using System.Diagnostics.Metrics;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Twitch.EventSub.API.ConduitModels;
 using Twitch.EventSub.API.Models;
 using Twitch.EventSub.CoreFunctions;
 
@@ -10,7 +12,7 @@ namespace Twitch.EventSub.API
 {
     public static class TwitchApi
     {
-        private const string BaseUrl = "https://api.twitch.tv/helix/eventsub/subscriptions";
+        private const string SubscriptionsUrl = "https://api.twitch.tv/helix/eventsub/subscriptions";
 
         private const string ValidateUrl = "https://id.twitch.tv/oauth2/validate";
 
@@ -36,7 +38,7 @@ namespace Twitch.EventSub.API
                     string requestBody = JsonConvert.SerializeObject(request);
                     var content = new StringContent(requestBody, Encoding.UTF8, "application/json");
 
-                    var response = await httpClient.PostAsync(BaseUrl, content, clSource.Token);
+                    var response = await httpClient.PostAsync(SubscriptionsUrl, content, clSource.Token);
                     switch (response.StatusCode)
                     {
                         case HttpStatusCode.Accepted:
@@ -74,7 +76,7 @@ namespace Twitch.EventSub.API
                 httpClient.DefaultRequestHeaders.Add("Client-Id", clientId);
                 try
                 {
-                    var url = $"{BaseUrl}?id={subscriptionId}";
+                    var url = $"{SubscriptionsUrl}?id={subscriptionId}";
                     var response = await httpClient.DeleteAsync(url, clSource.Token);
 
                     switch (response.StatusCode)
@@ -115,7 +117,7 @@ namespace Twitch.EventSub.API
 
                 try
                 {
-                    var queryBuilder = new StringBuilder(BaseUrl);
+                    var queryBuilder = new StringBuilder(SubscriptionsUrl);
 
                     if (!string.IsNullOrEmpty(status))
                         queryBuilder.Append($"?status={WebUtility.UrlEncode(status)}");
