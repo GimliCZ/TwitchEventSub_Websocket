@@ -198,7 +198,8 @@ namespace Twitch.EventSub.User
                 .Permit(UserActions.Dispose, UserState.Disposed);
             machine.Configure(UserState.Failing)
                 .OnEntryAsync(FailProcedureAsync)
-                .Permit(UserActions.Dispose, UserState.Disposed);
+                .Permit(UserActions.Dispose, UserState.Disposed)
+                .Ignore(UserActions.RunningAccessFail);
             machine.Configure(UserState.Disposed)
                 .OnEntryAsync(DisposeProcedureAsync)
                 .Ignore(UserActions.RunningProceed);
