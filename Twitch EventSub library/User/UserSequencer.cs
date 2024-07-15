@@ -578,8 +578,14 @@ namespace Twitch.EventSub.User
         /// <returns></returns>
         private async Task OnWatchdogTimeoutAsync(object sender, string e)
         {
+            if (StateMachine.CanFire(UserActions.ReconnectFromWatchdog))
+            {
+                await StateMachine.FireAsync(UserActions.ReconnectFromWatchdog);
+                return;
+            }
+
             await Socket.Stop(WebSocketCloseStatus.NormalClosure, "Server didn't respond in time");
-            _logger.LogWarningDetails("[EventSubClient] - [UserSequencer] Server didn't respond in time", sender, e, DateTime.Now);
+            _logger.LogWarningDetails("[EventSubClient] - [UserSequencer] Server didn't respond in time and program was not in state of safe reconnect recovery", sender, e, DateTime.Now);
             if (OnOutsideDisconnectAsync != null)
             {
                 await OnOutsideDisconnectAsync.TryInvoke(this, e);
@@ -613,6 +619,21 @@ namespace Twitch.EventSub.User
                 await Socket.Stop(WebSocketCloseStatus.NormalClosure, "Closing");
             }
             await StateMachine.FireAsync(UserActions.Dispose);
+        }
+
+        protected override async Task ReconnectingAfterWatchdogFailAsync()
+        {
+            await StopManagerAsync();
+            using (var cls = new CancellationTokenSource(StopGroupUnsubscribeTolerance))
+            {
+                await _subscriptionManager.ClearAsync(ClientId, AccessToken, UserId, _logger, cls);
+            }
+            await Socket.Stop(WebSocketCloseStatus.NormalClosure, "Server didn't respond in time");
+            _logger.LogDebugDetails("[EventSubClient] - [UserSequencer] Server didn't respond in time", DateTime.Now);
+            _watchdog.Stop();
+            Socket.Dispose();
+            //Reinicialize state machine
+            await StateMachine.FireAsync(UserActions.AccessTesting);
         }
     }
 }
