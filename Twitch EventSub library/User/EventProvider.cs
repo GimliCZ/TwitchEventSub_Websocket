@@ -19,13 +19,16 @@ namespace Twitch.EventSub.User
         private ILogger _logger;
         private string _userId;
         private UserSequencer _userSequencer;
+        private Timer _recoveryTimer;
+        private bool _allowRecovery;
 
         public EventProvider(
             string userId,
             string accessToken,
             List<SubscriptionType> listOfSubs,
             string clientId,
-            ILogger logger)
+            ILogger logger,
+            bool allowRecovery)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(userId, nameof(userId));
             ArgumentException.ThrowIfNullOrWhiteSpace(accessToken, nameof(accessToken));
@@ -37,9 +40,25 @@ namespace Twitch.EventSub.User
             _listOfSubs = listOfSubs;
             _clientId = clientId;
             _logger = logger;
-
+            _recoveryTimer = new(_ => OnRecoveryTimerEnlapsedAsync(), null, Timeout.Infinite, Timeout.Infinite);
+            _allowRecovery = allowRecovery;
             Create();
 
+        }
+
+        private async void OnRecoveryTimerEnlapsedAsync()
+        {
+            try
+            {
+                if (_userSequencer?.State == UserBase.UserState.Disposed && _allowRecovery == true)
+                {
+                    await StartAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "OnRecoveryTimer failed due {message}", ex.Message);
+            }
         }
 
         /// <summary>
@@ -106,7 +125,23 @@ namespace Twitch.EventSub.User
             {
                 Create();
             }
+            ResolveRecovery(true);
             return _userSequencer.StartAsync();
+        }
+
+        private void ResolveRecovery(bool shouldRun)
+        {
+            if (_allowRecovery)
+            {
+                if (shouldRun)
+                {
+                    _recoveryTimer.Change(TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
+                }
+                else
+                {
+                    _recoveryTimer.Change(Timeout.Infinite, Timeout.Infinite);
+                }
+            }
         }
 
         /// <summary>
@@ -115,6 +150,7 @@ namespace Twitch.EventSub.User
         /// <returns>Returns true on success, false if object is in invalid state to be stopped.</returns>
         internal Task<bool> StopAsync()
         {
+            ResolveRecovery(false);
             return _userSequencer.StopAsync();
         }
 
