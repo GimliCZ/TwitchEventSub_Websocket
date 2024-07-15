@@ -22,6 +22,7 @@ namespace Twitch.EventSub.User
             RunningAwait,
             RunningProceed,
             RunningAccessFail,
+            ReconnectFromWatchdog,
             ReconnectRequested,
             NewTokenProvidedReturnToInitialTest,
             NewTokenProvidedReturnToHandShake,
@@ -45,6 +46,7 @@ namespace Twitch.EventSub.User
             Running,
             Awaiting,
             Reconnecting,
+            ReconnectingFromWatchdog,
             AwaitNewTokenAfterFailedTest,
             AwaitNewTokenAfterFailedHandShake,
             AwaitNewTokenAfterFailedRun,
@@ -167,7 +169,8 @@ namespace Twitch.EventSub.User
                 .Permit(UserActions.Stop, UserState.Stoping)
                 .Permit(UserActions.Fail, UserState.Failing)
                 .Permit(UserActions.HandShakeFail, UserState.Failing)
-                .Permit(UserActions.WebsocketFail, UserState.Failing);
+                .Permit(UserActions.WebsocketFail, UserState.Failing)
+                .Permit(UserActions.ReconnectFromWatchdog, UserState.ReconnectingFromWatchdog);
             machine.Configure(UserState.Awaiting)
                 .OnEntryAsync(AwaitManagerAsync)
                 .Permit(UserActions.RunningProceed,UserState.Running)
@@ -176,7 +179,8 @@ namespace Twitch.EventSub.User
                 .Permit(UserActions.Stop, UserState.Stoping)
                 .Permit(UserActions.Fail, UserState.Failing)
                 .Permit(UserActions.HandShakeFail, UserState.Failing)
-                .Permit(UserActions.WebsocketFail, UserState.Failing);
+                .Permit(UserActions.WebsocketFail, UserState.Failing)
+                .Permit(UserActions.ReconnectFromWatchdog, UserState.ReconnectingFromWatchdog);
             //If NewAcessToken Requested, Start timer and 
             machine.Configure(UserState.AwaitNewTokenAfterFailedTest)
                 .OnEntryAsync(NewAccessTokenRequestAsync)
@@ -193,6 +197,9 @@ namespace Twitch.EventSub.User
             machine.Configure(UserState.Reconnecting)
                 .Permit(UserActions.ReconnectSuccess, UserState.Running)
                 .Permit(UserActions.ReconnectFail, UserState.Failing);
+            machine.Configure(UserState.ReconnectingFromWatchdog)
+                .OnEntryAsync(ReconnectingAfterWatchdogFailAsync)
+                .Permit(UserActions.AccessTesting, UserState.InitialAccessTest);
             machine.Configure(UserState.Stoping)
                 .OnEntryAsync(StopProcedureAsync)
                 .Permit(UserActions.Dispose, UserState.Disposed);
@@ -205,6 +212,7 @@ namespace Twitch.EventSub.User
                 .Ignore(UserActions.RunningProceed);
         }
 
+        protected abstract Task ReconnectingAfterWatchdogFailAsync();
         protected abstract Task FailProcedureAsync();
         protected abstract Task StopProcedureAsync();
 
