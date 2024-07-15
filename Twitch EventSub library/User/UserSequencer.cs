@@ -379,7 +379,8 @@ namespace Twitch.EventSub.User
                 {
                     var invalidToken = AccessToken;
                     await AccessTokenRequestedEvent.TryInvoke(this, LastAccessViolationArgs);
-                    _logger.LogErrorDetails("[EventSubClient] - [UserSequencer] Directly edit current object AccessToken", LastAccessViolationArgs);
+                    _logger.LogDebugDetails("[EventSubClient] - [UserSequencer] AccessToken refreshed requested," +
+                        " Old token, new token, time of request", invalidToken, AccessToken, LastAccessViolationArgs);
                     var NewToken = AccessToken;
                     if (invalidToken == NewToken)
                     {
