@@ -22,8 +22,9 @@ namespace Twitch.EventSub
         /// <param name="userId">The user ID.</param>
         /// <param name="accessToken">The access token.</param>
         /// <param name="listOfSubs">The list of subscription types.</param>
+        /// <param name="allowRecovery">Allow internal recovery attempts.</param>
         /// <returns>A task representing the asynchronous operation, with a result indicating success or failure.</returns>
-        Task<bool> AddUserAsync(string userId, string accessToken, List<SubscriptionType> listOfSubs);
+        Task<bool> AddUserAsync(string userId, string accessToken, List<SubscriptionType> listOfSubs,bool allowRecovery);
         /// <summary>
         /// Deletes an existing user from the event subscription service.
         /// </summary>
