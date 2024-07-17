@@ -59,10 +59,11 @@ namespace Twitch.EventSub.User
 
         public List<CreateSubscriptionRequest> RequestedSubscriptions;
 
-        public UserBase(string id, string access, List<CreateSubscriptionRequest> requestedSubscriptions)
+        public UserBase(string id, string access, List<CreateSubscriptionRequest> requestedSubscriptions, string url = null)
         {
             State = UserState.Registred;
-            Socket = new WebsocketClient(Url ?? new Uri(DefaultWebSocketUrl));
+            Url = new Uri(url ?? DefaultWebSocketUrl);
+            Socket = new WebsocketClient(Url);
             Socket.IsReconnectionEnabled = false;
             UserId = id;
             AccessToken = access;

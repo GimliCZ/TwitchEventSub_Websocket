@@ -5,6 +5,8 @@ VisualStudioVersion = 17.5.33627.172
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Twitch.EventSub_Websocket", "Twitch EventSub library\Twitch.EventSub_Websocket.csproj", "{42E5A136-4AE2-42BB-9975-41AEF1BD2C7B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TwitchEventSub_Websocket.Tests", "TwitchEventSub_Websocket.Tests\TwitchEventSub_Websocket.Tests.csproj", "{3487904F-47D5-476F-A75D-A7D2E926FBF6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{42E5A136-4AE2-42BB-9975-41AEF1BD2C7B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{42E5A136-4AE2-42BB-9975-41AEF1BD2C7B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{42E5A136-4AE2-42BB-9975-41AEF1BD2C7B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3487904F-47D5-476F-A75D-A7D2E926FBF6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3487904F-47D5-476F-A75D-A7D2E926FBF6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3487904F-47D5-476F-A75D-A7D2E926FBF6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3487904F-47D5-476F-A75D-A7D2E926FBF6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
