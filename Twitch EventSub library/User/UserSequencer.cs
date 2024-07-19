@@ -159,6 +159,12 @@ namespace Twitch.EventSub.User
                     _logger.LogDebug($"[OnRefreshTokenRequestAsync] Invoking Test access token renew procedure {e}");
                     await StateMachine.FireAsync(UserActions.AccessFailed);
                     break;
+                case UserState.Stoping:
+                    //We should probably attempt to refresh token to clear subscriptions,
+                    //but since we are stopping and subscriptions without connection clear anyway,
+                    //we can just ignore it. 
+                    _logger.LogDebug($"[OnRefreshTokenRequestAsync] Access token request triggered during subscription clear while Stoping [ignore]");
+                    break;
                 default:
                     _logger.LogError("[OnRefreshTokenRequestAsync] Unexpected state: {State}", StateMachine.State);
                     throw new InvalidOperationException("[EventSubClient] - [UserSequencer] OnRefreshTokenRequestAsync went into unknown state");
@@ -498,8 +504,18 @@ namespace Twitch.EventSub.User
         /// <returns></returns>
         private async Task ReconnectMessageProcessingAsync(WebSocketReconnectMessage message)
         {
-            _logger.LogDebug("[ReconnectMessageProcessingAsync] Processing reconnect message for UserId: {UserId}", UserId);
-            await StateMachine.FireAsync(UserActions.ReconnectRequested);
+            if (StateMachine.CanFire(UserActions.ReconnectRequested))
+            {
+                _logger.LogDebug("[ReconnectMessageProcessingAsync] Processing reconnect message for UserId: {UserId}", UserId);
+                await StateMachine.FireAsync(UserActions.ReconnectRequested);
+            }
+            else
+            {
+                //This is a fix for twitch triggering watchdog before sending reconnect messagge.
+                return;
+            }
+
+
             _watchdog.Stop();
 
             if (message?.Payload?.Session.ReconnectUrl != null)
@@ -612,7 +628,13 @@ namespace Twitch.EventSub.User
                 await StateMachine.FireAsync(UserActions.ReconnectFromWatchdog);
                 return;
             }
-
+            else if (StateMachine.State == UserState.Reconnecting)
+            {
+                //This is solution for case when we get reconnect message, but we are too slow and trigger watchdog anyway.
+                return;
+            }
+            //This is case when we are not in valid state for watchdog reconnection, for example handshake and etc.
+            //Eventually this case will be scares, but for now it will need recovery
             await Socket.Stop(WebSocketCloseStatus.NormalClosure, "Server didn't respond in time");
             _logger.LogWarningDetails("[EventSubClient] - [UserSequencer] Server didn't respond in time and program was not in state of safe reconnect recovery", sender, e, DateTime.Now);
             if (OnOutsideDisconnectAsync != null)
