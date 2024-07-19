@@ -509,9 +509,9 @@ namespace Twitch.EventSub.User
                 _logger.LogDebug("[ReconnectMessageProcessingAsync] Processing reconnect message for UserId: {UserId}", UserId);
                 await StateMachine.FireAsync(UserActions.ReconnectRequested);
             }
-            else
+            else if (StateMachine.State == UserState.ReconnectingFromWatchdog)
             {
-                //This is a fix for twitch triggering watchdog before sending reconnect messagge.
+                //This is a fix for twitch triggering watchdog before sending reconnect message.
                 return;
             }
 
