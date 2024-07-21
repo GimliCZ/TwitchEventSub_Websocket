@@ -55,7 +55,11 @@ namespace Twitch.EventSub.API.Models
         [JsonProperty("method")]
         public string Method { get; set; }
 
-        [JsonProperty("session_id")]
+        [JsonProperty("session_id", NullValueHandling = NullValueHandling.Ignore)]
         public string SessionId { get; set; }
+
+        [JsonProperty("conduit_id", NullValueHandling = NullValueHandling.Ignore)]
+        public string ConduitId { get; set; }
+
     }
 }

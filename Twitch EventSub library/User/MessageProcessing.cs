@@ -284,7 +284,7 @@ namespace Twitch.EventSub.User
                         "revocation" => new WebSocketRevocationMessage()
                         {
                             Metadata = metadata,
-                            Payload = payloadToken?.ToObject<WebSocketSubscription>()
+                            Payload = payloadToken?.ToObject<WebSocketRevokedSubscriptions>()
                         },
                         _ => throw new JsonSerializationException($"Unsupported message_type: {messageType}")
                     };

@@ -21,6 +21,8 @@ namespace Twitch.EventSub.User
         private UserSequencer _userSequencer;
         private Timer _recoveryTimer;
         private bool _allowRecovery;
+        private string? _testingApiUrl;
+        private string? _testingWebsocketUrl;
 
         public EventProvider(
             string userId,
@@ -52,7 +54,7 @@ namespace Twitch.EventSub.User
             {
                 if (_userSequencer?.State == UserBase.UserState.Disposed && _allowRecovery == true)
                 {
-                    await StartAsync();
+                    await StartAsync(_testingApiUrl,_testingWebsocketUrl);
                 }
             }
             catch (Exception ex)
@@ -85,7 +87,7 @@ namespace Twitch.EventSub.User
         /// <summary>
         /// Method to create UserSequencer instance and set up event handlers
         /// </summary>
-        private void Create()
+        private void Create(string? testApiUrl = null, string? testWebsocketUrl = null)
         {
             var listOfRequests = new List<CreateSubscriptionRequest>();
             foreach (var type in _listOfSubs)
@@ -96,7 +98,7 @@ namespace Twitch.EventSub.User
                     Condition = new Condition()
                 }.SetSubscriptionType(type, _userId));
             }
-            _userSequencer = new UserSequencer(_userId, _accessToken, listOfRequests, _clientId, _logger);
+            _userSequencer = new UserSequencer(_userId, _accessToken, listOfRequests, _clientId, _logger, testApiUrl, testWebsocketUrl);
 
             _userSequencer.AccessTokenRequestedEvent += AccessTokenRequestedEventAsync;
             _userSequencer.OnRawMessageRecievedAsync += OnRawMessageReceivedAsync;
@@ -119,11 +121,13 @@ namespace Twitch.EventSub.User
         /// Regenerates Sequencer object, in case if its internaly disposed
         /// </summary>
         /// <returns></returns>
-        internal Task StartAsync()
+        internal Task StartAsync(string testingApiUrl = null, string testingWebsocketUrl = null)
         {
             if (_userSequencer.IsDisposed())
             {
-                Create();
+                _testingApiUrl = testingApiUrl;
+                _testingWebsocketUrl = testingWebsocketUrl;
+                Create(testingApiUrl,testingWebsocketUrl);
             }
             ResolveRecovery(true);
             return _userSequencer.StartAsync();

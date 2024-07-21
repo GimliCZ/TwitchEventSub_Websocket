@@ -25,7 +25,7 @@ namespace Twitch.EventSub.API
         /// <returns>True on success, false on failure</returns>
         /// <exception cref="InvalidAccessTokenException"></exception>
         /// <exception cref="Exception">This state means that accessToken is not set up properly for given request</exception>
-        public static async Task<bool> SubscribeAsync(string? clientId, string? accessToken, CreateSubscriptionRequest request, CancellationTokenSource clSource, ILogger logger)
+        public static async Task<bool> SubscribeAsync(string? clientId, string? accessToken, CreateSubscriptionRequest request, CancellationTokenSource clSource, ILogger logger,string? url = null)
         {
             using (var httpClient = new HttpClient())
             {
@@ -36,7 +36,7 @@ namespace Twitch.EventSub.API
                     string requestBody = JsonConvert.SerializeObject(request);
                     var content = new StringContent(requestBody, Encoding.UTF8, "application/json");
 
-                    var response = await httpClient.PostAsync(BaseUrl, content, clSource.Token);
+                    var response = await httpClient.PostAsync(url ?? BaseUrl, content, clSource.Token);
                     switch (response.StatusCode)
                     {
                         case HttpStatusCode.Accepted:
@@ -66,7 +66,7 @@ namespace Twitch.EventSub.API
         /// <param name="subscriptionId"></param>
         /// <returns>True on success, false on failure</returns>
         /// <exception cref="InvalidAccessTokenException"></exception>
-        public static async Task<bool> UnSubscribeAsync(string? clientId, string? accessToken, string subscriptionId, CancellationTokenSource clSource, ILogger logger)
+        public static async Task<bool> UnSubscribeAsync(string? clientId, string? accessToken, string subscriptionId, CancellationTokenSource clSource, ILogger logger, string? url = null)
         {
             using (var httpClient = new HttpClient())
             {
@@ -74,8 +74,8 @@ namespace Twitch.EventSub.API
                 httpClient.DefaultRequestHeaders.Add("Client-Id", clientId);
                 try
                 {
-                    var url = $"{BaseUrl}?id={subscriptionId}";
-                    var response = await httpClient.DeleteAsync(url, clSource.Token);
+                    var urlSol = $"{url ?? BaseUrl}?id={subscriptionId}";
+                    var response = await httpClient.DeleteAsync(urlSol, clSource.Token);
 
                     switch (response.StatusCode)
                     {
@@ -104,7 +104,7 @@ namespace Twitch.EventSub.API
         /// <param name="after"></param>
         /// <returns cref="GetSubscriptionsResponse"> Provides segment of subscriptions, content MAY BE NULL</returns>
         /// <exception cref="InvalidAccessTokenException"></exception>
-        private static async Task<GetSubscriptionsResponse?> GetSubscriptionsAsync(string? clientId, string? accessToken, StatusProvider.SubscriptionStatus statusSelector, CancellationTokenSource clSource, ILogger logger, string? after = null)
+        private static async Task<GetSubscriptionsResponse?> GetSubscriptionsAsync(string? clientId, string? accessToken, StatusProvider.SubscriptionStatus statusSelector, CancellationTokenSource clSource, ILogger logger, string? after = null, string? url = null)
         {
             var status = StatusProvider.GetStatusString(statusSelector);
 
@@ -115,7 +115,7 @@ namespace Twitch.EventSub.API
 
                 try
                 {
-                    var queryBuilder = new StringBuilder(BaseUrl);
+                    var queryBuilder = new StringBuilder(url ?? BaseUrl);
 
                     if (!string.IsNullOrEmpty(status))
                         queryBuilder.Append($"?status={WebUtility.UrlEncode(status)}");
@@ -155,7 +155,7 @@ namespace Twitch.EventSub.API
         /// <param name="statusSelector"></param>
         /// <returns> list of subscriptions</returns>
         /// <exception cref="InvalidAccessTokenException">May provide exception from GetSubscriptionsAsync</exception>
-        public static async Task<List<GetSubscriptionsResponse>> GetAllSubscriptionsAsync(string? clientId, string? accessToken, CancellationTokenSource clSource, ILogger logger, StatusProvider.SubscriptionStatus statusSelector = StatusProvider.SubscriptionStatus.Enabled)
+        public static async Task<List<GetSubscriptionsResponse>> GetAllSubscriptionsAsync(string? clientId, string? accessToken, CancellationTokenSource clSource, ILogger logger, StatusProvider.SubscriptionStatus statusSelector = StatusProvider.SubscriptionStatus.Enabled, string? url = null)
         {
             var allSubscriptions = new List<GetSubscriptionsResponse>();
             string? afterCursor = null;
@@ -163,7 +163,7 @@ namespace Twitch.EventSub.API
 
             for (int i = 0; i < totalPossibleIterations; i++)
             {
-                var response = await GetSubscriptionsAsync(clientId, accessToken, statusSelector, clSource, logger, afterCursor);
+                var response = await GetSubscriptionsAsync(clientId, accessToken, statusSelector, clSource, logger, afterCursor, url);
                 if (response != null)
                 {
                     allSubscriptions.Add(response);
@@ -200,14 +200,14 @@ namespace Twitch.EventSub.API
         /// <param name="logger">ILogger for logging.</param>
         /// <returns>True if the token is valid, false if not.</returns>
         /// <exception cref="InvalidAccessTokenException"></exception>
-        public static async Task<bool> ValidateTokenAsync(string? accessToken, CancellationTokenSource clSource, ILogger logger)
+        public static async Task<bool> ValidateTokenAsync(string? accessToken, CancellationTokenSource clSource, ILogger logger, string? url = null)
         {
             using (var httpClient = new HttpClient())
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("OAuth", accessToken);
                 try
                 {
-                    var response = await httpClient.GetAsync(ValidateUrl, clSource.Token);
+                    var response = await httpClient.GetAsync(url ?? ValidateUrl, clSource.Token);
                     switch (response.StatusCode)
                     {
                         case System.Net.HttpStatusCode.OK:
