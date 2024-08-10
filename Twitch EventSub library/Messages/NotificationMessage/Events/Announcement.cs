@@ -7,5 +7,4 @@ namespace Twitch.EventSub.Messages.NotificationMessage.Events
         [JsonProperty("color")]
         public string Color { get; set; }
     }
-
 }

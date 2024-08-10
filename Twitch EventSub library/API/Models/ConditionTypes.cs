@@ -1,6 +1,5 @@
 ﻿namespace Twitch.EventSub.API.Models
 {
-
     public enum ConditionType
     {
         UserId,
@@ -12,8 +11,7 @@
         /* OrganizationId,
          CategoryId,
          CampaignId,
-         ExtensionClientId,
-         ClientId*/
+         ExtensionClientId,*/
+        ClientId
     }
-
 }

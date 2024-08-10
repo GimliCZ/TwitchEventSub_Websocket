@@ -29,7 +29,7 @@ namespace Twitch.EventSub.Messages.NotificationMessage.Events
         public string MessageId { get; set; }
 
         [JsonProperty("message")]
-        public Message Message { get; set; }
+        public MessageNotification Message { get; set; }
 
         [JsonProperty("notice_type")]
         public string NoticeType { get; set; }
@@ -47,16 +47,16 @@ namespace Twitch.EventSub.Messages.NotificationMessage.Events
         public CommunitySubGift CommunitySubGift { get; set; }
 
         [JsonProperty("gift_paid_upgrade")]
-        public string GiftPaidUpgrade { get; set; }
+        public GiftPaidUpgradeNotification GiftPaidUpgrade { get; set; }
 
         [JsonProperty("prime_paid_upgrade")]
-        public string PrimePaidUpgrade { get; set; }
+        public PrimePaidUpgradeNotification PrimePaidUpgrade { get; set; }
 
         [JsonProperty("pay_it_forward")]
-        public string PayItForward { get; set; }
+        public PayItForwardNotification PayItForward { get; set; }
 
         [JsonProperty("raid")]
-        public string Raid { get; set; }
+        public RaidNotification Raid { get; set; }
 
         [JsonProperty("unraid")]
         public string Unraid { get; set; }
@@ -65,18 +65,52 @@ namespace Twitch.EventSub.Messages.NotificationMessage.Events
         public Announcement Announcement { get; set; }
 
         [JsonProperty("bits_badge_tier")]
-        public string BitsBadgeTier { get; set; }
+        public BitsBadgeTierNotification BitsBadgeTier { get; set; }
 
         [JsonProperty("charity_donation")]
-        public string CharityDonation { get; set; }
+        public CharityDonationNotification CharityDonation { get; set; }
     }
-    public class MessageFragment
+
+    public class MessageNotification
+    {
+        [JsonProperty("text")]
+        public string Text { get; set; }
+
+        [JsonProperty("fragments")]
+        public List<FragmentNotification> Fragments { get; set; }
+    }
+
+    public class FragmentNotification
     {
         [JsonProperty("type")]
         public string Type { get; set; }
 
         [JsonProperty("text")]
         public string Text { get; set; }
+
+        [JsonProperty("cheermote")]
+        public CheermoteNotification Cheermote { get; set; }
+
+        [JsonProperty("emote")]
+        public EmoteNotification Emote { get; set; }
+
+        [JsonProperty("mention")]
+        public MentionNotification Mention { get; set; }
+    }
+
+    public class EmoteNotification
+    {
+        [JsonProperty("id")]
+        public string Id { get; set; }
+
+        [JsonProperty("emote_set_id")]
+        public string EmoteSetId { get; set; }
+
+        [JsonProperty("owner_id")]
+        public string OwnerId { get; set; }
+
+        [JsonProperty("format")]
+        public List<string> Format { get; set; }
     }
 
     public class SubEvent
@@ -161,5 +195,110 @@ namespace Twitch.EventSub.Messages.NotificationMessage.Events
 
         [JsonProperty("cumulative_total")]
         public int CumulativeTotal { get; set; }
+    }
+
+    public class CheermoteNotification
+    {
+        [JsonProperty("prefix")]
+        public string Prefix { get; set; }
+
+        [JsonProperty("bits")]
+        public int Bits { get; set; }
+
+        [JsonProperty("tier")]
+        public int Tier { get; set; }
+    }
+
+    public class MentionNotification
+    {
+        [JsonProperty("user_id")]
+        public string UserId { get; set; }
+
+        [JsonProperty("user_name")]
+        public string UserName { get; set; }
+
+        [JsonProperty("user_login")]
+        public string UserLogin { get; set; }
+    }
+
+    public class GiftPaidUpgradeNotification
+    {
+        [JsonProperty("gifter_is_anonymous")]
+        public bool GifterIsAnonymous { get; set; }
+
+        [JsonProperty("gifter_user_id")]
+        public string GifterUserId { get; set; }
+
+        [JsonProperty("gifter_user_name")]
+        public string GifterUserName { get; set; }
+
+        [JsonProperty("gifter_user_login")]
+        public string GifterUserLogin { get; set; }
+    }
+
+    public class PrimePaidUpgradeNotification
+    {
+        [JsonProperty("sub_tier")]
+        public string SubTier { get; set; }
+    }
+
+    public class PayItForwardNotification
+    {
+        [JsonProperty("gifter_is_anonymous")]
+        public bool GifterIsAnonymous { get; set; }
+
+        [JsonProperty("gifter_user_id")]
+        public string GifterUserId { get; set; }
+
+        [JsonProperty("gifter_user_name")]
+        public string GifterUserName { get; set; }
+
+        [JsonProperty("gifter_user_login")]
+        public string GifterUserLogin { get; set; }
+    }
+
+    public class RaidNotification
+    {
+        [JsonProperty("user_id")]
+        public string UserId { get; set; }
+
+        [JsonProperty("user_name")]
+        public string UserName { get; set; }
+
+        [JsonProperty("user_login")]
+        public string UserLogin { get; set; }
+
+        [JsonProperty("viewer_count")]
+        public int ViewerCount { get; set; }
+
+        [JsonProperty("profile_image_url")]
+        public string ProfileImageUrl { get; set; }
+    }
+
+    public class BitsBadgeTierNotification
+    {
+        [JsonProperty("tier")]
+        public int Tier { get; set; }
+    }
+
+    public class CharityDonationNotification
+    {
+        [JsonProperty("charity_name")]
+        public string CharityName { get; set; }
+
+        [JsonProperty("amount")]
+        public DonationAmount Amount { get; set; }
+    }
+
+    public class DonationAmount
+    {
+        [JsonProperty("value")]
+        public int Value { get; set; }
+
+        [JsonProperty("decimal_place")]
+        public int DecimalPlace { get; set; }
+
+        [JsonProperty("currency")]
+        public string Currency { get; set; }
     }
 }

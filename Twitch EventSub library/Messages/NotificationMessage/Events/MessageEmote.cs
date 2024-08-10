@@ -16,5 +16,4 @@ namespace Twitch.EventSub.Messages.NotificationMessage.Events
         [JsonProperty("format")]
         public List<string> Format { get; set; }
     }
-
 }

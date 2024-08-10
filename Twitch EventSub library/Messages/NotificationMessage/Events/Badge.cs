@@ -13,5 +13,4 @@ namespace Twitch.EventSub.Messages.NotificationMessage.Events
         [JsonProperty("info")]
         public string Info { get; set; }
     }
-
 }

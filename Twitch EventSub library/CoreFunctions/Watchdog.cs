@@ -41,7 +41,7 @@ namespace Twitch.EventSub.CoreFunctions
         }
 
         /// <summary>
-        /// Renews timing 
+        /// Renews timing
         /// </summary>
         /// <exception cref="ArgumentNullException"></exception>
         public void Reset()

@@ -11,7 +11,7 @@ namespace Twitch.EventSub.Messages.NotificationMessage.Events
         public string Text { get; set; }
 
         [JsonProperty("cheermote")]
-        public string Cheermote { get; set; }
+        public Cheermote Cheermote { get; set; }
 
         [JsonProperty("emote")]
         public Emote Emote { get; set; }
@@ -20,4 +20,10 @@ namespace Twitch.EventSub.Messages.NotificationMessage.Events
         public string Mention { get; set; }
     }
 
+    public class Cheermote
+    {
+        public string Prefix { get; set; }
+        public int Bits { get; set; }
+        public int Tier { get; set; }
+    }
 }

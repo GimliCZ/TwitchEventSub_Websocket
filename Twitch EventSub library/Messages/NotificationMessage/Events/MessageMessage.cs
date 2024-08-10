@@ -10,5 +10,4 @@ namespace Twitch.EventSub.Messages.NotificationMessage.Events
         [JsonProperty("fragments")]
         public List<Fragment> Fragments { get; set; }
     }
-
 }

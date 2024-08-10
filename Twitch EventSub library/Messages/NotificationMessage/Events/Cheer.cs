@@ -5,12 +5,12 @@ namespace Twitch.EventSub.Messages.NotificationMessage.Events
     public class Cheer
     {
         [JsonProperty("prefix")]
-        string Prefix { get; set; }
+        private string Prefix { get; set; }
 
         [JsonProperty("bits")]
-        int Bits { get; set; }
+        private int Bits { get; set; }
 
         [JsonProperty("tier")]
-        int Tier { get; set; }
+        private int Tier { get; set; }
     }
 }
