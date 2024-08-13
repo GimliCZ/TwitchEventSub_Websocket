@@ -22,7 +22,7 @@ namespace Twitch.EventSub.User
 
             var eventType = payload["subscription"]?["type"]?.ToObject<string>();
 
-            if (eventType != null && Registry.Register.RegisterDictionary.TryGetValue(eventType, out var registryItem))
+            if (eventType != null && Twitch.EventSub.SubsRegister.Register.RegisterDictionary.TryGetValue(eventType, out var registryItem))
             {
                 var eventTypeObject = registryItem.SpecificObject;
                 var eventTypeInstance = payload["event"]?.ToObject(eventTypeObject);

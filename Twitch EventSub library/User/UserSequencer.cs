@@ -32,6 +32,7 @@ namespace Twitch.EventSub.User
         private const int AccessTokenValidationTolerance = 5000; //[ms]
         private const int WelcomeMessageDelayTolerance = 1000;//[ms]
         private const int NewAccessTokenRequestDelay = 1000;//[ms]
+        private const int NumberOfRetries = 3;
         private AsyncAutoResetEvent _awaitMessage = new(false);
         private AsyncAutoResetEvent _awaitRefresh = new(false);
         private ILogger _logger;
@@ -77,7 +78,7 @@ namespace Twitch.EventSub.User
             try
             {
                 var tries = 0;
-                while (tries < 3)
+                while (tries < NumberOfRetries)
                 {
                     //This is fix for state, when we want to do checks for subscriptions
                     //And we are right in middle of access token refresh or other non critical state

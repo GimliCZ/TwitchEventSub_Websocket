@@ -10,7 +10,7 @@ namespace Twitch.EventSub.API.Extensions
         {
             var newDict = new Dictionary<SubscriptionType, (string Type, string Version, List<ConditionType> Conditions)>();
 
-            foreach (var register in Registry.Register.GetRegisterList())
+            foreach (var register in Twitch.EventSub.SubsRegister.Register.GetRegisterList())
             {
                 newDict.Add(register.SubscriptionType, (register.Key, register.Ver, register.Conditions));
             }

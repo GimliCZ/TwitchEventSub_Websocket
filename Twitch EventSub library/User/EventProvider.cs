@@ -4,6 +4,25 @@ using Twitch.EventSub.API.Models;
 using Twitch.EventSub.CoreFunctions;
 using Twitch.EventSub.Interfaces;
 using Twitch.EventSub.Messages.NotificationMessage.Events;
+using Twitch.EventSub.Messages.NotificationMessage.Events.Automod;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelCharity;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelChat;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelCheer;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelGoal;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelGuest;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelHype;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelModerator;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelPoints;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelPoll;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelPrediction;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelShield;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelShoutout;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelSubscription;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelSuspicious;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelUnban;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelVIP;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelWarning;
+using Twitch.EventSub.Messages.NotificationMessage.Events.Stream;
 
 namespace Twitch.EventSub.User
 {

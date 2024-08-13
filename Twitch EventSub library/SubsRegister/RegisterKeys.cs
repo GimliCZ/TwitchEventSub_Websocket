@@ -1,7 +1,7 @@
 ﻿using System.Linq.Expressions;
 using System.Reflection;
 
-namespace Twitch.EventSub
+namespace Twitch.EventSub.SubsRegister
 {
     //TOTAL 66
     public static class RegisterKeys
@@ -86,14 +86,14 @@ namespace Twitch.EventSub
         public const string StreamOffline = "stream.offline";
         public const string StreamOnline = "stream.online";
 
-        public static List<string> KeysList => GetRegistryKeysList("Twitch.EventSub.RegisterKeys");
+        public static readonly List<string> KeysList = GetRegistryKeysList();
 
-        public static List<string> GetRegistryKeysList(string typeName)
+        public static List<string> GetRegistryKeysList()
         {
-            var type = Type.GetType(typeName) ?? throw new ArgumentException($"Type '{typeName}' not found.");
+            var type = typeof(RegisterKeys);
 
             // Get all public static fields
-            var fields = type.GetFields(BindingFlags.Public | BindingFlags.Static);
+            var fields = type.GetFields(BindingFlags.Public | BindingFlags.Static).Where(x => x.Name != nameof(KeysList));
 
             // Create a list to hold the values
             var registryKeysList = new List<string>();

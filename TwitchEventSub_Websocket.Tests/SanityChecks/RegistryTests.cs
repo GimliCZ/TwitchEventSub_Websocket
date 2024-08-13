@@ -1,14 +1,13 @@
-﻿namespace TwitchEventSub_Websocket.Tests.SanityChecks
-{
-    using System.Linq;
-    using System.Reflection;
-    using Twitch.EventSub;
-    using Twitch.EventSub.API.Extensions;
-    using Twitch.EventSub.API.Models;
-    using Twitch.EventSub.Registry;
-    using Twitch.EventSub.User;
-    using Xunit;
+﻿using System.Reflection;
+using Twitch.EventSub;
+using Twitch.EventSub.API.Extensions;
+using Twitch.EventSub.API.Models;
+using Twitch.EventSub.User;
+using Twitch.EventSub.SubsRegister;
 
+
+namespace TwitchEventSub_Websocket.Tests.SanityChecks
+{
     public class RegistryTests
     {
         [Fact]
@@ -17,6 +16,7 @@
             // Retrieve all constants from RegistryKeys
             var registryKeys = typeof(RegisterKeys)
                 .GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+                .Where(x => x.Name != nameof(RegisterKeys.KeysList))
                 .Select(field => field.GetValue(null) as string)
                 .ToList();
 
@@ -46,6 +46,7 @@
             // Retrieve all constants from RegistryKeys
             var registryKeys = typeof(RegisterKeys)
                 .GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+                .Where(x => x.Name != nameof(RegisterKeys.KeysList))
                 .Select(field => field.GetValue(null) as string)
                 .ToList();
 

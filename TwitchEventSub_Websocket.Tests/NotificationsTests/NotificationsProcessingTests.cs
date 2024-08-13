@@ -1,5 +1,22 @@
 ﻿using Twitch.EventSub.Messages.NotificationMessage;
 using Twitch.EventSub.Messages.NotificationMessage.Events;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelCharity;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelChat;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelCheer;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelGoal;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelGuest;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelHype;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelModerator;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelPoints;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelPoll;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelPrediction;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelShield;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelShoutout;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelSubscription;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelUnban;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelVIP;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelWarning;
+using Twitch.EventSub.Messages.NotificationMessage.Events.Stream;
 using Twitch.EventSub.User;
 
 namespace TwitchEventSub_Websocket.Tests.NotificationsTests
@@ -655,8 +672,8 @@ namespace TwitchEventSub_Websocket.Tests.NotificationsTests
             var Event = notificationMessage?.Payload?.Event;
             Assert.IsType<ChannelChatUserMessageHoldEvent>(Event);
             var chatUserMessageHold = (ChannelChatUserMessageHoldEvent)Event;
-            Assert.Equal("emote", chatUserMessageHold.message.Fragments.FirstOrDefault().Type);
-            Assert.Equal("foo", chatUserMessageHold.message.Fragments.FirstOrDefault().Emote.Id);
+            Assert.Equal("emote", chatUserMessageHold.Message.Fragments.FirstOrDefault().Type);
+            Assert.Equal("foo", chatUserMessageHold.Message.Fragments.FirstOrDefault().Emote.Id);
             Assert.Equal("befa7b53-d79d-478f-86b9-120f112b044e", notificationMessage.Metadata.MessageId);
             Assert.Equal("webhook", notificationMessage?.Payload?.Subscription.Transport.Method);
             Assert.Equal("1337", notificationMessage?.Payload?.Subscription.Condition.BroadcasterUserId);
@@ -681,8 +698,8 @@ namespace TwitchEventSub_Websocket.Tests.NotificationsTests
             var Event = notificationMessage?.Payload?.Event;
             Assert.IsType<ChannelChatUserMessageUpdateEvent>(Event);
             var chatUserMessageUpdate = (ChannelChatUserMessageUpdateEvent)Event;
-            Assert.Equal("emote", chatUserMessageUpdate.message.Fragments.FirstOrDefault().Type);
-            Assert.Equal("foo", chatUserMessageUpdate.message.Fragments.FirstOrDefault().Emote.Id);
+            Assert.Equal("emote", chatUserMessageUpdate.Message.Fragments.FirstOrDefault().Type);
+            Assert.Equal("foo", chatUserMessageUpdate.Message.Fragments.FirstOrDefault().Emote.Id);
             Assert.Equal("befa7b53-d79d-478f-86b9-120f112b044e", notificationMessage.Metadata.MessageId);
             Assert.Equal("webhook", notificationMessage?.Payload?.Subscription.Transport.Method);
             Assert.Equal("1337", notificationMessage?.Payload?.Subscription.Condition.BroadcasterUserId);
