@@ -12,5 +12,11 @@ namespace Twitch.EventSub.Messages.SharedContents
 
         [JsonProperty("message_timestamp")]
         public string MessageTimestamp { get; set; }
+
+        [JsonProperty("subscription_type", NullValueHandling = NullValueHandling.Ignore)]
+        public string SubscriptionType { get; set; }
+
+        [JsonProperty("subscription_version", NullValueHandling = NullValueHandling.Ignore)]
+        public string SubscriptionVersion { get; set; }
     }
 }

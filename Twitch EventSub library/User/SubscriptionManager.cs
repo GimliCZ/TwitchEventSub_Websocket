@@ -23,7 +23,7 @@ namespace Twitch.EventSub.User
         public event AsyncEventHandler<RefreshRequestArgs> OnRefreshTokenRequestAsync;
 
         /// <summary>
-        /// Procedure refreshing subriptions 
+        /// Procedure refreshing subriptions
         /// </summary>
         /// <param name="userId">User ID</param>
         /// <param name="requestedSubscriptions">Requested Subscriptions</param>
@@ -171,7 +171,6 @@ namespace Twitch.EventSub.User
 
                 foreach (var subscription in getSubscriptionsResponse.Data)
                 {
-
                     if (subscription is null)
                     {
                         logger.LogInformation("[EventSubClient] - [SubscriptionManager] Retrieved null Subscription");
@@ -260,7 +259,6 @@ namespace Twitch.EventSub.User
             return TryFuncAsync(TryGetAllSubscriptionsAsync, logger, userId);
         }
 
-
         /// <summary>
         /// This should catch any AccessToken exception and calls outside for changes.
         /// Then it calls function again.
@@ -280,7 +278,7 @@ namespace Twitch.EventSub.User
             {
                 //procedure must run UpdateOnFly function for proper change
                 logger.LogInformationDetails("[EventSubClient] - [SubscriptionManager] Invalid Access token detected, requesting change.", ex);
-                await OnRefreshTokenRequestAsync.TryInvoke(this, new RefreshRequestArgs{ UserId = UserId, DateTime = DateTime.Now });
+                await OnRefreshTokenRequestAsync.TryInvoke(this, new RefreshRequestArgs { UserId = UserId, DateTime = DateTime.Now });
             }
             catch (TaskCanceledException)
             {

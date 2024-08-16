@@ -17,6 +17,7 @@
             WebsocketInternalError,
             WebsocketNetworkTimeout,
             WebsocketNetworkError,
+
             //My addition - describes all possible states
             Empty
         }

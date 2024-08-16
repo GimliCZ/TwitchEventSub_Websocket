@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 
-
 namespace Twitch.EventSub.CoreFunctions
 {
     public static class LoggerExtension
@@ -15,7 +14,6 @@ namespace Twitch.EventSub.CoreFunctions
 
             args ??= Array.Empty<object>();
 
-
             var message = string.Join(Environment.NewLine, args.OfType<string>());
             var details = string.Join(Environment.NewLine, args.Except(args.OfType<string>()).Select(d => d is Exception ? FormatExceptionDetails(d as Exception) : Newtonsoft.Json.JsonConvert.SerializeObject(d)));
 
@@ -26,21 +24,27 @@ namespace Twitch.EventSub.CoreFunctions
                 case LogLevel.Trace:
                     logger.LogTrace(formattedMessage);
                     break;
+
                 case LogLevel.Debug:
                     logger.LogDebug(formattedMessage);
                     break;
+
                 case LogLevel.Information:
                     logger.LogInformation(formattedMessage);
                     break;
+
                 case LogLevel.Warning:
                     logger.LogWarning(formattedMessage);
                     break;
+
                 case LogLevel.Error:
                     logger.LogError(formattedMessage);
                     break;
+
                 case LogLevel.Critical:
                     logger.LogCritical(formattedMessage);
                     break;
+
                 default:
                     logger.LogInformation(formattedMessage);
                     break;
@@ -69,7 +73,6 @@ namespace Twitch.EventSub.CoreFunctions
             details += $"Message: {exception.Message}{Environment.NewLine}";
             details += $"Source: {exception.Source}{Environment.NewLine}";
             details += $"Stack Trace:{Environment.NewLine}{exception.StackTrace}{Environment.NewLine}";
-
 
             if (exception.InnerException != null)
                 details += $"Inner Exception: {FormatExceptionDetails(exception.InnerException)}{Environment.NewLine}";

@@ -26,11 +26,13 @@ namespace Twitch.EventSub.User
         //Each blocking operation must be done within 10 seconds, else we risk missing messages
         //This also serves as additional layer of protection, if events run way to long
         private const int RevocationResubscribeTolerance = 1000; //[ms]
+
         private const int StopGroupUnsubscribeTolerance = 5000; //[ms]
         private const int RunGroupSubscribeTolerance = 5000; //[ms]
         private const int AccessTokenValidationTolerance = 5000; //[ms]
         private const int WelcomeMessageDelayTolerance = 1000;//[ms]
         private const int NewAccessTokenRequestDelay = 1000;//[ms]
+        private const int NumberOfRetries = 3;
         private AsyncAutoResetEvent _awaitMessage = new(false);
         private AsyncAutoResetEvent _awaitRefresh = new(false);
         private ILogger _logger;
@@ -47,7 +49,7 @@ namespace Twitch.EventSub.User
         /// <param name="requestedSubscriptions">List of requested subscriptions.</param>
         /// <param name="clientId">Client ID.</param>
         /// <param name="logger">Logger instance.</param>
-        public UserSequencer(string id, string access, List<CreateSubscriptionRequest> requestedSubscriptions, string clientId, ILogger logger,string apiTestingUrl = null, string socketTestingUrl = null) : base(id, access, requestedSubscriptions, socketTestingUrl)
+        public UserSequencer(string id, string access, List<CreateSubscriptionRequest> requestedSubscriptions, string clientId, ILogger logger, string apiTestingUrl = null, string socketTestingUrl = null) : base(id, access, requestedSubscriptions, socketTestingUrl)
         {
             _logger = logger;
             ClientId = clientId;
@@ -61,8 +63,11 @@ namespace Twitch.EventSub.User
         }
 
         public event CoreFunctions.AsyncEventHandler<string?> OnRawMessageRecievedAsync;
+
         public event CoreFunctions.AsyncEventHandler<string?> OnOutsideDisconnectAsync;
+
         public event CoreFunctions.AsyncEventHandler<RefreshRequestArgs> AccessTokenRequestedEvent;
+
         public event CoreFunctions.AsyncEventHandler<WebSocketNotificationPayload> OnNotificationMessageAsync;
 
         /// <summary>
@@ -72,7 +77,32 @@ namespace Twitch.EventSub.User
         {
             try
             {
-                await StateMachine.FireAsync(UserActions.RunningProceed);
+                var tries = 0;
+                while (tries < NumberOfRetries)
+                {
+                    //This is fix for state, when we want to do checks for subscriptions
+                    //And we are right in middle of access token refresh or other non critical state
+                    //Reason why are we not stopping manager and restarting it in refresh, is so that we retain
+                    //inicial subscription timing.
+                    if (StateMachine.CanFire(UserActions.RunningProceed))
+                    {
+                        await StateMachine.FireAsync(UserActions.RunningProceed);
+                        return;
+                    }
+                    else
+                    {
+                        // this is so that we leave termination states as fast as possible.
+                        if (StateMachine.IsInState(UserState.Stoping) ||
+                            StateMachine.IsInState(UserState.Failing) ||
+                            StateMachine.IsInState(UserState.Disposed))
+                        {
+                            return;
+                        }
+
+                        tries++;
+                        await Task.Delay(1000);
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -151,20 +181,28 @@ namespace Twitch.EventSub.User
                     _logger.LogDebug($"[OnRefreshTokenRequestAsync] Invoking Running access token renew procedure {e}");
                     await StateMachine.FireAsync(UserActions.RunningAccessFail);
                     break;
+
                 case UserState.HandShake:
                     _logger.LogDebug($"[OnRefreshTokenRequestAsync] Invoking Handshake access token renew procedure {e}");
                     await StateMachine.FireAsync(UserActions.HandShakeAccessFail);
                     break;
+
                 case UserState.InitialAccessTest:
                     _logger.LogDebug($"[OnRefreshTokenRequestAsync] Invoking Test access token renew procedure {e}");
                     await StateMachine.FireAsync(UserActions.AccessFailed);
                     break;
+
                 case UserState.Stoping:
                     //We should probably attempt to refresh token to clear subscriptions,
-                    //but since we are stopping and subscriptions without connection clear anyway,
-                    //we can just ignore it. 
+                    //but since we are stopping or reseting session and subscriptions without connection clear anyway,
+                    //we can just ignore it.
                     _logger.LogDebug($"[OnRefreshTokenRequestAsync] Access token request triggered during subscription clear while Stoping [ignore]");
                     break;
+
+                case UserState.ReconnectingFromWatchdog:
+                    _logger.LogDebug($"[OnRefreshTokenRequestAsync] Access token request triggered during subscription clear while watchdog Reconnecting [ignore]");
+                    break;
+
                 default:
                     _logger.LogError("[OnRefreshTokenRequestAsync] Unexpected state: {State}", StateMachine.State);
                     throw new InvalidOperationException("[EventSubClient] - [UserSequencer] OnRefreshTokenRequestAsync went into unknown state");
@@ -212,7 +250,6 @@ namespace Twitch.EventSub.User
                     _logger
                     );
                 await RunManagerNextActionAsync(checkOk);
-
             }
         }
 
@@ -297,6 +334,12 @@ namespace Twitch.EventSub.User
                 _logger.LogInformation("[EventSubClient] - [UserSequencer] Socket correctly disconnected");
                 return;
             }
+            //this is case, when we transition to watchdog reconnect and twitch servers request disconnect at same time.
+            if (StateMachine.IsInState(UserState.ReconnectingFromWatchdog))
+            {
+                _logger.LogInformation("[EventSubClient] - [UserSequencer] Watchdog triggered Reconnect. Socket disconnected.");
+                return;
+            }
             _logger.LogErrorDetails("[EventSubClient] - [UserSequencer] Socket Disconnected from outside", disconnectInfo);
             await StateMachine.FireAsync(UserActions.WebsocketFail);
         }
@@ -316,7 +359,6 @@ namespace Twitch.EventSub.User
             }
         }
 
-
         private async Task<Task> ParseWebSocketMessageAsync(string e)
         {
             _logger.LogDebug("[ParseWebSocketMessageAsync] Parsing message: {Message}", e);
@@ -334,7 +376,6 @@ namespace Twitch.EventSub.User
                     _logger.LogErrorDetails("[EventSubClient] - [UserSequencer] Error while parsing WebSocket message: ", e, ex);
                     return Task.CompletedTask;
                 }
-
 
                 if (_replayProtection.IsDuplicate(message.Metadata.MessageId) ||
                     !_replayProtection.IsUpToDate(message.Metadata.MessageTimestamp))
@@ -372,12 +413,10 @@ namespace Twitch.EventSub.User
                 _logger.LogDebug("[InitialAccessTokenAsync] Validating initial access token for UserId: {UserId}", UserId);
                 using (CancellationTokenSource cts = new CancellationTokenSource(AccessTokenValidationTolerance))
                 {
-
                     var validationResult = await _subscriptionManager.ApiTryValidateAsync(AccessToken, UserId, _logger, cts);
                     await InicialAccessTokenNextActionAsync(validationResult);
                 }
             }
-
         }
 
         private async Task InicialAccessTokenNextActionAsync(bool validationResult)
@@ -435,14 +474,17 @@ namespace Twitch.EventSub.User
                     _logger.LogDebug($"[NewAccessTokenRequestAsync] Returning to Test after Access Token renew {invalidToken}");
                     await StateMachine.FireAsync(UserActions.NewTokenProvidedReturnToInitialTest);
                     break;
+
                 case UserState.AwaitNewTokenAfterFailedHandShake:
                     _logger.LogDebug($"[NewAccessTokenRequestAsync] Returning to Handshake after Access Token renew {invalidToken}");
                     await StateMachine.FireAsync(UserActions.NewTokenProvidedReturnToHandShake);
                     break;
+
                 case UserState.AwaitNewTokenAfterFailedRun:
                     _logger.LogDebug($"[NewAccessTokenRequestAsync] Returning to Run after Access Token renew {invalidToken}");
                     await StateMachine.FireAsync(UserActions.NewTokenProvidedReturnToRunning);
                     break;
+
                 default:
                     _logger.LogError("[NewAccessTokenRequestAsync] Unexpected state: {State}", StateMachine.State);
                     throw new InvalidOperationException("NewAccessTokenRequest run into invalid state");
@@ -479,7 +521,6 @@ namespace Twitch.EventSub.User
             {
                 _logger.LogErrorDetails("[EventSubClient] - [UserSequencer] Welcome message detected, but did not contain keep alive.", message, DateTime.Now);
             }
-
         }
 
         /// <summary>
@@ -515,7 +556,6 @@ namespace Twitch.EventSub.User
                 return;
             }
 
-
             _watchdog.Stop();
 
             if (message?.Payload?.Session.ReconnectUrl != null)
@@ -539,7 +579,6 @@ namespace Twitch.EventSub.User
                     await StateMachine.FireAsync(UserActions.ReconnectFail);
                     return;
                 }
-
             }
             if (message.Payload.Session.KeepAliveTimeoutSeconds.HasValue)
             {
@@ -565,7 +604,7 @@ namespace Twitch.EventSub.User
 
         /// <summary>
         /// When subscription sieses to exist. We attempt to recover it outside of standard check.
-        /// This may be for changes of accesses to subscriptions 
+        /// This may be for changes of accesses to subscriptions
         /// </summary>
         /// <param name="e"></param>
         /// <returns></returns>
@@ -616,7 +655,7 @@ namespace Twitch.EventSub.User
         }
 
         /// <summary>
-        /// Triggers when server didn't respond in time. 
+        /// Triggers when server didn't respond in time.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>

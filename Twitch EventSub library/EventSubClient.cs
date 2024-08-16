@@ -64,7 +64,7 @@ namespace Twitch.EventSub
         {
             if (string.IsNullOrWhiteSpace(userId))
             {
-                _logger.LogErrorDetails("AddUser Failed due null or empty key",  userId);
+                _logger.LogErrorDetails("AddUser Failed due null or empty key", userId);
                 return false;
             }
             if (_eventDictionary.ContainsKey(userId))

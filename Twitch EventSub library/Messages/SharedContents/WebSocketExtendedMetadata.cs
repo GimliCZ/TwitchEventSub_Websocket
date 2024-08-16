@@ -15,4 +15,3 @@ namespace Twitch.EventSub.Messages.SharedContents
         [JsonProperty("subscription_version")] public string SubscriptionVersion { get; set; }
     }
 }
-

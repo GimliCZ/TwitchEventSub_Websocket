@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Moq;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Twitch.EventSub.API.Models;
 
 namespace TwitchEventSub_Websocket.Tests.TwitchApiTests
@@ -10,7 +8,6 @@ namespace TwitchEventSub_Websocket.Tests.TwitchApiTests
         public ApiTests()
         {
         }
-
 
         [Fact]
         public void TestRequestSerializationForSubscription()
@@ -44,4 +41,3 @@ namespace TwitchEventSub_Websocket.Tests.TwitchApiTests
         }
     }
 }
-

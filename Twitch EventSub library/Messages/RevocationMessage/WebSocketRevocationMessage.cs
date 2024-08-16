@@ -1,5 +1,4 @@
 ﻿using Newtonsoft.Json;
-using Twitch.EventSub.Messages.SharedContents;
 
 namespace Twitch.EventSub.Messages.RevocationMessage
 {

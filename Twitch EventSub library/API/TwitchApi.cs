@@ -25,7 +25,7 @@ namespace Twitch.EventSub.API
         /// <returns>True on success, false on failure</returns>
         /// <exception cref="InvalidAccessTokenException"></exception>
         /// <exception cref="Exception">This state means that accessToken is not set up properly for given request</exception>
-        public static async Task<bool> SubscribeAsync(string? clientId, string? accessToken, CreateSubscriptionRequest request, CancellationTokenSource clSource, ILogger logger,string? url = null)
+        public static async Task<bool> SubscribeAsync(string? clientId, string? accessToken, CreateSubscriptionRequest request, CancellationTokenSource clSource, ILogger logger, string? url = null)
         {
             using (var httpClient = new HttpClient())
             {
@@ -41,6 +41,7 @@ namespace Twitch.EventSub.API
                     {
                         case HttpStatusCode.Accepted:
                             return true;
+
                         case HttpStatusCode.Unauthorized:
                             throw new InvalidAccessTokenException("Subscribe failed due" + await response.Content.ReadAsStreamAsync(clSource.Token) + response.ReasonPhrase);
                         case HttpStatusCode.Forbidden:
@@ -213,6 +214,7 @@ namespace Twitch.EventSub.API
                         case System.Net.HttpStatusCode.OK:
                             logger.LogDebug("[EventSubClient] - [TwitchApi] Validation of Token Successfull {StatusCode}", response.StatusCode);
                             return true;
+
                         case System.Net.HttpStatusCode.Unauthorized:
                             var errorMessage = await response.Content.ReadAsStringAsync(clSource.Token);
                             throw new InvalidAccessTokenException($"[EventSubClient] - [TwitchApi] Validation of token failed: {errorMessage} {response.ReasonPhrase}");
