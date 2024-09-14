@@ -220,11 +220,15 @@ namespace Twitch.EventSub.User
             machine.Configure(UserState.Failing)
                 .OnEntryAsync(FailProcedureAsync)
                 .Permit(UserActions.Dispose, UserState.Disposed)
-                .Ignore(UserActions.RunningAccessFail);
+                .Ignore(UserActions.RunningAccessFail)
+                .Ignore(UserActions.Fail);
             machine.Configure(UserState.Disposed)
                 .OnEntryAsync(DisposeProcedureAsync)
                 .Ignore(UserActions.RunningProceed);
+            machine.OnUnhandledTrigger(UnhandeledState);
         }
+
+        protected abstract void UnhandeledState(UserState state, UserActions actions);
 
         protected abstract Task ReconnectingAfterWatchdogFailAsync();
 

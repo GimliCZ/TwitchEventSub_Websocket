@@ -725,5 +725,11 @@ namespace Twitch.EventSub.User
             //Reinicialize state machine
             await StateMachine.FireAsync(UserActions.AccessTesting);
         }
+
+        protected override void UnhandeledState(UserState state, UserActions actions)
+        {
+            _logger.LogWarning($"State machine run into invalid state {state} while attempting to switch with action {actions}"
+                + "Please report this error to the developer of library.");
+        }
     }
 }
