@@ -33,13 +33,13 @@ namespace Twitch.EventSub.User
     public class EventProvider : IEventProvider
     {
         private string _accessToken;
-        private string _clientId;
+        private readonly string _clientId;
         private List<SubscriptionType> _listOfSubs;
-        private ILogger _logger;
-        private string _userId;
+        private readonly ILogger _logger;
+        private readonly string _userId;
         private UserSequencer _userSequencer;
-        private Timer _recoveryTimer;
-        private bool _allowRecovery;
+        private readonly Timer _recoveryTimer;
+        private readonly bool _allowRecovery;
         private string? _testingApiUrl;
         private string? _testingWebsocketUrl;
 

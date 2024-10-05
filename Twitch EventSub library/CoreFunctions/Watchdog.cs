@@ -6,13 +6,15 @@ namespace Twitch.EventSub.CoreFunctions
     {
         private readonly ILogger _logger;
         private bool _isRunning;
+        private bool _isInit;
         private int _timeout;
         private Timer _timerWatchdog;
 
         public Watchdog(ILogger logger)
         {
             _isRunning = false;
-            _logger = logger;
+            _isInit = false;
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger), $"{nameof(logger)} is null.");
         }
 
         public event AsyncEventHandler<string> OnWatchdogTimeout;
@@ -32,6 +34,7 @@ namespace Twitch.EventSub.CoreFunctions
             {
                 _isRunning = true;
                 _timerWatchdog = new Timer(OnTimerElapsed, null, _timeout, _timeout);
+                _isInit = true;
                 _logger.LogDebug("[EventSubClient] - [Watchdog] Watchdog started.");
             }
             else
@@ -46,6 +49,10 @@ namespace Twitch.EventSub.CoreFunctions
         /// <exception cref="ArgumentNullException"></exception>
         public void Reset()
         {
+            if (!_isInit)
+            {
+                return;
+            }
             if (_timerWatchdog == null)
             {
                 throw new ArgumentNullException(nameof(_timerWatchdog));
@@ -67,20 +74,21 @@ namespace Twitch.EventSub.CoreFunctions
         /// <exception cref="ArgumentNullException"></exception>
         public void Stop()
         {
+            if (!_isInit)
+            {
+                return;
+            }
             if (_timerWatchdog == null)
             {
                 throw new ArgumentNullException(nameof(_timerWatchdog));
             }
             if (_isRunning)
             {
-                _timerWatchdog.Change(Timeout.Infinite, Timeout.Infinite);
-                _isRunning = false;
-                _logger.LogDebug("[EventSubClient] - [Watchdog] Watchdog stopped.");
+            _timerWatchdog.Change(Timeout.Infinite, Timeout.Infinite);
+            _isRunning = false;
+            _logger.LogDebug("[EventSubClient] - [Watchdog] Watchdog stopped.");
             }
-            else
-            {
-                _logger.LogDebug("[EventSubClient] - [Watchdog] Watchdog is not running.");
-            }
+            _logger.LogDebug("[EventSubClient] - [Watchdog] Watchdog is not running.");
         }
 
         /// <summary>

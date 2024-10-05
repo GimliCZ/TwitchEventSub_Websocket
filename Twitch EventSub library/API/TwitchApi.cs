@@ -1,8 +1,8 @@
-﻿using System.Net;
+﻿using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
-using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Twitch.EventSub.API.Models;
 using Twitch.EventSub.CoreFunctions;
 
@@ -36,7 +36,7 @@ namespace Twitch.EventSub.API
                     string requestBody = JsonConvert.SerializeObject(request);
                     var content = new StringContent(requestBody, Encoding.UTF8, "application/json");
 
-                    var response = await httpClient.PostAsync(url ?? BaseUrl, content, clSource.Token);
+                    var response = await httpClient.PostAsync(url ?? BaseUrl, content, clSource.Token).ConfigureAwait(false);
                     switch (response.StatusCode)
                     {
                         case HttpStatusCode.Accepted:
@@ -76,7 +76,7 @@ namespace Twitch.EventSub.API
                 try
                 {
                     var urlSol = $"{url ?? BaseUrl}?id={subscriptionId}";
-                    var response = await httpClient.DeleteAsync(urlSol, clSource.Token);
+                    var response = await httpClient.DeleteAsync(urlSol, clSource.Token).ConfigureAwait(false);
 
                     switch (response.StatusCode)
                     {
@@ -124,7 +124,7 @@ namespace Twitch.EventSub.API
                     if (!string.IsNullOrEmpty(after))
                         queryBuilder.Append($"&after={WebUtility.UrlEncode(after)}");
 
-                    var response = await httpClient.GetAsync(queryBuilder.ToString(), clSource.Token);
+                    var response = await httpClient.GetAsync(queryBuilder.ToString(), clSource.Token).ConfigureAwait(false);
                     var body = await response.Content.ReadAsStringAsync(clSource.Token);
                     if (string.IsNullOrEmpty(body))
                     {
@@ -164,7 +164,7 @@ namespace Twitch.EventSub.API
 
             for (int i = 0; i < totalPossibleIterations; i++)
             {
-                var response = await GetSubscriptionsAsync(clientId, accessToken, statusSelector, clSource, logger, afterCursor, url);
+                var response = await GetSubscriptionsAsync(clientId, accessToken, statusSelector, clSource, logger, afterCursor, url).ConfigureAwait(false);
                 if (response != null)
                 {
                     allSubscriptions.Add(response);
@@ -208,7 +208,7 @@ namespace Twitch.EventSub.API
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("OAuth", accessToken);
                 try
                 {
-                    var response = await httpClient.GetAsync(url ?? ValidateUrl, clSource.Token);
+                    var response = await httpClient.GetAsync(url ?? ValidateUrl, clSource.Token).ConfigureAwait(false);
                     switch (response.StatusCode)
                     {
                         case System.Net.HttpStatusCode.OK:
