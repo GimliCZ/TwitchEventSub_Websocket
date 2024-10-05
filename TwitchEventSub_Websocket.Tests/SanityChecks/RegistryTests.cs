@@ -81,7 +81,7 @@ namespace TwitchEventSub_Websocket.Tests.SanityChecks
             // Retrieve all subscription types from TypeVersionConditionMap
             var subscriptionTypes = typeof(CreateSubscriptionRequestExtension)
                 .GetField("TypeVersionConditionMap", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)
-                ?.GetValue(null) as Dictionary<SubscriptionType, (string Type, string Version, List<ConditionType> Conditions)>;
+                ?.GetValue(null) as Dictionary<SubscriptionType, (string Type, string Version, List<ConditionTypes> Conditions)>;
 
             // Ensure registryItems and subscriptionTypes are not null
             Assert.NotNull(registryItems);

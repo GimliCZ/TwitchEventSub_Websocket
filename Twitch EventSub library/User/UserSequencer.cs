@@ -1,8 +1,8 @@
-﻿using System.Net.WebSockets;
-using System.Reactive.Linq;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.Threading;
 using Newtonsoft.Json;
+using System.Net.WebSockets;
+using System.Reactive.Linq;
 using Twitch.EventSub.API.Models;
 using Twitch.EventSub.CoreFunctions;
 using Twitch.EventSub.Messages;
@@ -33,13 +33,13 @@ namespace Twitch.EventSub.User
         private const int WelcomeMessageDelayTolerance = 1000;//[ms]
         private const int NewAccessTokenRequestDelay = 1000;//[ms]
         private const int NumberOfRetries = 3;
-        private AsyncAutoResetEvent _awaitMessage = new(false);
-        private AsyncAutoResetEvent _awaitRefresh = new(false);
-        private ILogger _logger;
-        private Timer _managerTimer;
-        private ReplayProtection _replayProtection;
-        private SubscriptionManager _subscriptionManager;
-        private Watchdog _watchdog;
+        private readonly AsyncAutoResetEvent _awaitMessage = new(false);
+        private readonly AsyncAutoResetEvent _awaitRefresh = new(false);
+        private readonly ILogger _logger;
+        private readonly Timer _managerTimer;
+        private readonly ReplayProtection _replayProtection;
+        private readonly SubscriptionManager _subscriptionManager;
+        private readonly Watchdog _watchdog;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UserSequencer"/> class.
@@ -226,7 +226,7 @@ namespace Twitch.EventSub.User
             }
             catch (Exception ex)
             {
-                _logger.LogErrorDetails("[EventSubClient] - [UserSequencer] Welcome message didn't come in time.", Socket, DateTime.Now);
+                _logger.LogErrorDetails("[EventSubClient] - [UserSequencer] Welcome message didn't come in time. Exception message: " + ex.Message, ex, Socket, DateTime.Now);
                 await StateMachine.FireAsync(UserActions.WelcomeMessageFail);
             }
         }

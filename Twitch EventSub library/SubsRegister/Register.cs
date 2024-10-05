@@ -32,7 +32,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(AutomodMessageHoldEvent),
             SubscriptionType = SubscriptionType.AutomodMessageHold,
-            Conditions = CondList(ConditionType.BroadcasterUserId, ConditionType.ModeratorUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId, ConditionTypes.ModeratorUserId)
         };
 
         public static readonly RegisterItem RegAutomodMessageUpdate = new RegisterItem
@@ -41,7 +41,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(AutomodMessageHoldEvent),
             SubscriptionType = SubscriptionType.AutomodMessageUpdate,
-            Conditions = CondList(ConditionType.BroadcasterUserId, ConditionType.ModeratorUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId, ConditionTypes.ModeratorUserId)
         };
 
         public static readonly RegisterItem RegAutomodTermsUpdate = new RegisterItem
@@ -50,7 +50,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(AutomodTermsUpdateEvent),
             SubscriptionType = SubscriptionType.AutomodTermsUpdate,
-            Conditions = CondList(ConditionType.BroadcasterUserId, ConditionType.ModeratorUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId, ConditionTypes.ModeratorUserId)
         };
 
         public static readonly RegisterItem RegConduitShardDisabled = new RegisterItem
@@ -59,7 +59,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ConduitShardDisabledEvent),
             SubscriptionType = SubscriptionType.ConduitShardDisabled,
-            Conditions = CondList(ConditionType.ClientId)
+            Conditions = CondList(ConditionTypes.ClientId)
         };
 
         public static readonly RegisterItem RegChannelAdBreakBegin = new RegisterItem
@@ -68,7 +68,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelAdBreakBeginEvent),
             SubscriptionType = SubscriptionType.ChannelAdBreakBegin,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelBan = new RegisterItem
@@ -77,7 +77,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelBanEvent),
             SubscriptionType = SubscriptionType.ChannelBan,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelFollow = new RegisterItem
@@ -86,7 +86,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "2",
             SpecificObject = typeof(ChannelFollowEvent),
             SubscriptionType = SubscriptionType.ChannelFollow,
-            Conditions = CondList(ConditionType.BroadcasterUserId, ConditionType.ModeratorUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId, ConditionTypes.ModeratorUserId)
         };
 
         public static readonly RegisterItem RegChannelGoalBegin = new RegisterItem
@@ -95,7 +95,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelGoalBeginEvent),
             SubscriptionType = SubscriptionType.ChannelGoalBegin,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelGoalEnd = new RegisterItem
@@ -104,7 +104,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelGoalEndEvent),
             SubscriptionType = SubscriptionType.ChannelGoalEnd,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelGoalProgress = new RegisterItem
@@ -113,7 +113,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelGoalProgressEvent),
             SubscriptionType = SubscriptionType.ChannelGoalProgress,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelGuestStarGuestUpdate = new RegisterItem
@@ -122,7 +122,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "beta",
             SpecificObject = typeof(ChannelGuestStarGuestUpdateEvent),
             SubscriptionType = SubscriptionType.BetaChannelGuestStarGuestUpdate,
-            Conditions = CondList(ConditionType.BroadcasterUserId, ConditionType.ModeratorUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId, ConditionTypes.ModeratorUserId)
         };
 
         public static readonly RegisterItem RegChannelGuestStarSessionBegin = new RegisterItem
@@ -131,7 +131,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "beta",
             SpecificObject = typeof(ChannelGuestStarSessionBeginEvent),
             SubscriptionType = SubscriptionType.BetaChannelGuestStarSessionBegin,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelGuestStarSessionEnd = new RegisterItem
@@ -140,7 +140,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "beta",
             SpecificObject = typeof(ChannelGuestStarSessionEndEvent),
             SubscriptionType = SubscriptionType.BetaChannelGuestStarSessionEnd,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelGuestStarSettingsUpdate = new RegisterItem
@@ -149,7 +149,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "beta",
             SpecificObject = typeof(ChannelGuestStarSettingsUpdateEvent),
             SubscriptionType = SubscriptionType.BetaChannelGuestStarSettingsUpdate,
-            Conditions = CondList(ConditionType.BroadcasterUserId, ConditionType.ModeratorUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId, ConditionTypes.ModeratorUserId)
         };
 
         public static readonly RegisterItem RegChannelHypeTrainBegin = new RegisterItem
@@ -158,7 +158,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelHypeTrainBeginEvent),
             SubscriptionType = SubscriptionType.ChannelHypeTrainBegin,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelHypeTrainEnd = new RegisterItem
@@ -167,7 +167,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelHypeTrainEndEvent),
             SubscriptionType = SubscriptionType.ChannelHypeTrainEnd,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelHypeTrainProgress = new RegisterItem
@@ -176,7 +176,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelHypeTrainProgressEvent),
             SubscriptionType = SubscriptionType.ChannelHypeTrainProgress,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelCharityCampaignProgress = new RegisterItem
@@ -185,7 +185,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelCharityCampaignProgressEvent),
             SubscriptionType = SubscriptionType.CharityCampaignProgress,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelCharityCampaignStart = new RegisterItem
@@ -194,7 +194,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelCharityCampaignStartEvent),
             SubscriptionType = SubscriptionType.CharityCampaignStart,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelCharityCampaignStop = new RegisterItem
@@ -203,7 +203,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelCharityCampaignStopEvent),
             SubscriptionType = SubscriptionType.CharityCampaignStop,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelCharityDonation = new RegisterItem
@@ -212,7 +212,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelCharityDonationEvent),
             SubscriptionType = SubscriptionType.CharityDonation,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelChatClear = new RegisterItem
@@ -221,7 +221,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelChatClearEvent),
             SubscriptionType = SubscriptionType.ChannelChatClear,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelChatClearUserMessages = new RegisterItem
@@ -230,7 +230,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelChatClearUserMessagesEvent),
             SubscriptionType = SubscriptionType.ChannelChatClearUserMessages,
-            Conditions = CondList(ConditionType.BroadcasterUserId, ConditionType.UserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId, ConditionTypes.UserId)
         };
 
         public static readonly RegisterItem RegChannelChatMessage = new RegisterItem
@@ -239,7 +239,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelChatMessageEvent),
             SubscriptionType = SubscriptionType.ChannelChatMessage,
-            Conditions = CondList(ConditionType.BroadcasterUserId, ConditionType.UserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId, ConditionTypes.UserId)
         };
 
         public static readonly RegisterItem RegChannelChatMessageDelete = new RegisterItem
@@ -248,7 +248,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelChatMessageDeleteEvent),
             SubscriptionType = SubscriptionType.ChannelChatMessageDelete,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelChatNotification = new RegisterItem
@@ -257,7 +257,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelChatNotificationEvent),
             SubscriptionType = SubscriptionType.ChannelChatNotification,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelChatSettingsUpdate = new RegisterItem
@@ -266,7 +266,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelChatSettingsUpdateEvent),
             SubscriptionType = SubscriptionType.ChannelChatSettingsUpdate,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelChatUserMessageHold = new RegisterItem
@@ -275,7 +275,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelChatUserMessageHoldEvent),
             SubscriptionType = SubscriptionType.ChannelChatUserMessageHold,
-            Conditions = CondList(ConditionType.BroadcasterUserId, ConditionType.UserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId, ConditionTypes.UserId)
         };
 
         public static readonly RegisterItem RegChannelChatUserMessageUpdate = new RegisterItem
@@ -284,7 +284,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelChatUserMessageUpdateEvent),
             SubscriptionType = SubscriptionType.ChannelChatUserMessageUpdate,
-            Conditions = CondList(ConditionType.BroadcasterUserId, ConditionType.UserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId, ConditionTypes.UserId)
         };
 
         public static readonly RegisterItem RegChannelCheer = new RegisterItem
@@ -293,7 +293,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelCheerEvent),
             SubscriptionType = SubscriptionType.ChannelCheer,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelModeratorAdd = new RegisterItem
@@ -302,7 +302,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelModeratorAddEvent),
             SubscriptionType = SubscriptionType.ChannelModeratorAdd,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelModeratorRemove = new RegisterItem
@@ -311,7 +311,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelModeratorRemoveEvent),
             SubscriptionType = SubscriptionType.ChannelModeratorRemove,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelPointsAutomaticRewardRedemptionAdd = new RegisterItem
@@ -320,7 +320,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelPointsAutomaticRewardRedemptionAddEvent),
             SubscriptionType = SubscriptionType.ChannelPointsAutomaticRewardRedemptionAdd,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelPointsCustomRewardAdd = new RegisterItem
@@ -329,7 +329,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelPointsCustomRewardAddEvent),
             SubscriptionType = SubscriptionType.ChannelPointsCustomRewardAdd,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelPointsCustomRewardRedemptionAdd = new RegisterItem
@@ -338,7 +338,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelPointsCustomRewardRedemptionAddEvent),
             SubscriptionType = SubscriptionType.ChannelPointsCustomRewardRedemptionAdd,
-            Conditions = CondList(ConditionType.BroadcasterUserId, ConditionType.RewardId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId, ConditionTypes.RewardId)
         };
 
         public static readonly RegisterItem RegChannelPointsCustomRewardRedemptionUpdate = new RegisterItem
@@ -347,7 +347,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelPointsCustomRewardRedemptionUpdateEvent),
             SubscriptionType = SubscriptionType.ChannelPointsCustomRewardRedemptionUpdate,
-            Conditions = CondList(ConditionType.BroadcasterUserId, ConditionType.RewardId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId, ConditionTypes.RewardId)
         };
 
         public static readonly RegisterItem RegChannelPointsCustomRewardRemove = new RegisterItem
@@ -356,7 +356,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelPointsCustomRewardRemoveEvent),
             SubscriptionType = SubscriptionType.ChannelPointsCustomRewardRemove,
-            Conditions = CondList(ConditionType.BroadcasterUserId, ConditionType.RewardId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId, ConditionTypes.RewardId)
         };
 
         public static readonly RegisterItem RegChannelPointsCustomRewardUpdate = new RegisterItem
@@ -365,7 +365,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelPointsCustomRewardUpdateEvent),
             SubscriptionType = SubscriptionType.ChannelPointsCustomRewardUpdate,
-            Conditions = CondList(ConditionType.BroadcasterUserId, ConditionType.RewardId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId, ConditionTypes.RewardId)
         };
 
         public static readonly RegisterItem RegChannelPollBegin = new RegisterItem
@@ -374,7 +374,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelPollBeginEvent),
             SubscriptionType = SubscriptionType.ChannelPollBegin,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelPollEnd = new RegisterItem
@@ -383,7 +383,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelPollEndEvent),
             SubscriptionType = SubscriptionType.ChannelPollEnd,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelPollProgress = new RegisterItem
@@ -392,7 +392,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelPollProgressEvent),
             SubscriptionType = SubscriptionType.ChannelPollProgress,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelPredictionBegin = new RegisterItem
@@ -401,7 +401,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelPredictionBeginEvent),
             SubscriptionType = SubscriptionType.ChannelPredictionBegin,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelPredictionEnd = new RegisterItem
@@ -410,7 +410,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelPredictionEndEvent),
             SubscriptionType = SubscriptionType.ChannelPredictionEnd,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelPredictionLock = new RegisterItem
@@ -419,7 +419,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelPredictionLockEvent),
             SubscriptionType = SubscriptionType.ChannelPredictionLock,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelPredictionProgress = new RegisterItem
@@ -428,7 +428,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelPredictionProgressEvent),
             SubscriptionType = SubscriptionType.ChannelPredictionProgress,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelRaid = new RegisterItem
@@ -437,7 +437,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelRaidEvent),
             SubscriptionType = SubscriptionType.ChannelRaid,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelShieldModeBegin = new RegisterItem
@@ -446,7 +446,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelShieldModeBeginEvent),
             SubscriptionType = SubscriptionType.ChannelShieldModeBegin,
-            Conditions = CondList(ConditionType.BroadcasterUserId, ConditionType.ModeratorUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId, ConditionTypes.ModeratorUserId)
         };
 
         public static readonly RegisterItem RegChannelShieldModeEnd = new RegisterItem
@@ -455,7 +455,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelShieldModeEndEvent),
             SubscriptionType = SubscriptionType.ChannelShieldModeEnd,
-            Conditions = CondList(ConditionType.BroadcasterUserId, ConditionType.ModeratorUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId, ConditionTypes.ModeratorUserId)
         };
 
         public static readonly RegisterItem RegChannelShoutoutCreate = new RegisterItem
@@ -464,7 +464,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelShoutoutCreateEvent),
             SubscriptionType = SubscriptionType.ChannelShoutoutCreate,
-            Conditions = CondList(ConditionType.BroadcasterUserId, ConditionType.ModeratorUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId, ConditionTypes.ModeratorUserId)
         };
 
         public static readonly RegisterItem RegChannelShoutoutReceived = new RegisterItem
@@ -473,7 +473,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelShoutoutReceivedEvent),
             SubscriptionType = SubscriptionType.ChannelShoutoutReceived,
-            Conditions = CondList(ConditionType.BroadcasterUserId, ConditionType.ModeratorUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId, ConditionTypes.ModeratorUserId)
         };
 
         public static readonly RegisterItem RegChannelSubscribe = new RegisterItem
@@ -482,7 +482,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelSubscribeEvent),
             SubscriptionType = SubscriptionType.ChannelSubscribe,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelSubscriptionEnd = new RegisterItem
@@ -491,7 +491,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelSubscriptionEndEvent),
             SubscriptionType = SubscriptionType.ChannelSubscriptionEnd,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelSubscriptionGift = new RegisterItem
@@ -500,7 +500,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelSubscriptionGiftEvent),
             SubscriptionType = SubscriptionType.ChannelSubscriptionGift,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelSubscriptionMessage = new RegisterItem
@@ -509,7 +509,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelSubscriptionMessageEvent),
             SubscriptionType = SubscriptionType.ChannelSubscriptionMessage,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelUnban = new RegisterItem
@@ -518,7 +518,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelUnbanEvent),
             SubscriptionType = SubscriptionType.ChannelUnban,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelUnbanRequestCreate = new RegisterItem
@@ -527,7 +527,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelUnbanRequestCreateEvent),
             SubscriptionType = SubscriptionType.ChannelUnbanCreate,
-            Conditions = CondList(ConditionType.BroadcasterUserId, ConditionType.ModeratorUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId, ConditionTypes.ModeratorUserId)
         };
 
         public static readonly RegisterItem RegChannelUnbanRequestResolve = new RegisterItem
@@ -536,7 +536,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelUnbanRequestResolveEvent),
             SubscriptionType = SubscriptionType.ChannelUnbanResolve,
-            Conditions = CondList(ConditionType.BroadcasterUserId, ConditionType.ModeratorUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId, ConditionTypes.ModeratorUserId)
         };
 
         public static readonly RegisterItem RegChannelUpdate = new RegisterItem
@@ -545,7 +545,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "2",
             SpecificObject = typeof(ChannelUpdateEvent),
             SubscriptionType = SubscriptionType.ChannelUpdate,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelVIPAdd = new RegisterItem
@@ -554,7 +554,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelVIPAddEvent),
             SubscriptionType = SubscriptionType.ChannelVIPAdd,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelVIPRemove = new RegisterItem
@@ -563,7 +563,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelVIPRemoveEvent),
             SubscriptionType = SubscriptionType.ChannelVIPRemove,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelWarningAcknowledge = new RegisterItem
@@ -572,7 +572,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelWarningAcknowledgeEvent),
             SubscriptionType = SubscriptionType.ChannelWarningAcknowledge,
-            Conditions = CondList(ConditionType.BroadcasterUserId, ConditionType.ModeratorUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId, ConditionTypes.ModeratorUserId)
         };
 
         public static readonly RegisterItem RegChannelWarningSend = new RegisterItem
@@ -581,7 +581,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelWarningSendEvent),
             SubscriptionType = SubscriptionType.ChannelWarningSend,
-            Conditions = CondList(ConditionType.BroadcasterUserId, ConditionType.ModeratorUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId, ConditionTypes.ModeratorUserId)
         };
 
         public static readonly RegisterItem RegStreamOffline = new RegisterItem
@@ -590,7 +590,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(StreamOfflineEvent),
             SubscriptionType = SubscriptionType.StreamOffline,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegStreamOnline = new RegisterItem
@@ -599,7 +599,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(StreamOnlineEvent),
             SubscriptionType = SubscriptionType.StreamOnline,
-            Conditions = CondList(ConditionType.BroadcasterUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId)
         };
 
         public static readonly RegisterItem RegChannelSuspiciousUserMessage = new RegisterItem
@@ -608,7 +608,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelSuspiciousUserMessageEvent),
             SubscriptionType = SubscriptionType.SuspiciousUserMessage,
-            Conditions = CondList(ConditionType.BroadcasterUserId, ConditionType.ModeratorUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId, ConditionTypes.ModeratorUserId)
         };
 
         public static readonly RegisterItem RegChannelSuspiciousUserUpdate = new RegisterItem
@@ -617,7 +617,7 @@ namespace Twitch.EventSub.SubsRegister
             Ver = "1",
             SpecificObject = typeof(ChannelSuspiciousUserUpdateEvent),
             SubscriptionType = SubscriptionType.SuspiciousUserUpdate,
-            Conditions = CondList(ConditionType.BroadcasterUserId, ConditionType.ModeratorUserId)
+            Conditions = CondList(ConditionTypes.BroadcasterUserId, ConditionTypes.ModeratorUserId)
         };
 
         public static readonly List<RegisterItem> RegisterList = GetRegisterList();
@@ -733,9 +733,9 @@ namespace Twitch.EventSub.SubsRegister
             };
         }
 
-        private static List<ConditionType> CondList(params ConditionType[] types)
+        private static List<ConditionTypes> CondList(params ConditionTypes[] types)
         {
-            var list = new List<ConditionType>();
+            var list = new List<ConditionTypes>();
             list.AddRange(types);
             return list;
         }
@@ -747,6 +747,6 @@ namespace Twitch.EventSub.SubsRegister
         public Type SpecificObject { get; set; }
         public SubscriptionType SubscriptionType { get; set; }
         public string Ver { get; set; }
-        public List<ConditionType> Conditions { get; set; }
+        public List<ConditionTypes> Conditions { get; set; }
     }
 };

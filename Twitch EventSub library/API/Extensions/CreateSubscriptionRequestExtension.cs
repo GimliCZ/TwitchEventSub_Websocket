@@ -4,24 +4,17 @@ namespace Twitch.EventSub.API.Extensions
 {
     public static class CreateSubscriptionRequestExtension
     {
-        private static readonly Dictionary<SubscriptionType, (string Type, string Version, List<ConditionType> Conditions)> TypeVersionConditionMap = GenerateSubscriptionDisctionary();
+        private static readonly Dictionary<SubscriptionType, (string Type, string Version, List<ConditionTypes> Conditions)> TypeVersionConditionMap = GenerateSubscriptionDisctionary();
 
-        private static Dictionary<SubscriptionType, (string Type, string Version, List<ConditionType> Conditions)> GenerateSubscriptionDisctionary()
+        private static Dictionary<SubscriptionType, (string Type, string Version, List<ConditionTypes> Conditions)> GenerateSubscriptionDisctionary()
         {
-            var newDict = new Dictionary<SubscriptionType, (string Type, string Version, List<ConditionType> Conditions)>();
+            var newDict = new Dictionary<SubscriptionType, (string Type, string Version, List<ConditionTypes> Conditions)>();
 
             foreach (var register in Twitch.EventSub.SubsRegister.Register.GetRegisterList())
             {
                 newDict.Add(register.SubscriptionType, (register.Key, register.Ver, register.Conditions));
             }
             return newDict;
-        }
-
-        private static List<ConditionType> CondList(params ConditionType[] types)
-        {
-            var list = new List<ConditionType>();
-            list.AddRange(types);
-            return list;
         }
 
         //Reward Id enables to sub to specific reward only. As null it subs all rewards
@@ -36,15 +29,15 @@ namespace Twitch.EventSub.API.Extensions
                 {
                     switch (conditionType)
                     {
-                        case ConditionType.BroadcasterUserId:
+                        case ConditionTypes.BroadcasterUserId:
                             request.Condition.BroadcasterUserId = userId;
                             break;
 
-                        case ConditionType.ToBroadcasterUserId:
+                        case ConditionTypes.ToBroadcasterUserId:
                             request.Condition.ToBroadcasterUserId = userId;
                             break;
 
-                        case ConditionType.ModeratorUserId:
+                        case ConditionTypes.ModeratorUserId:
                             request.Condition.ModeratorUserId = userId;
                             break;
                         //webhook only
@@ -59,17 +52,17 @@ namespace Twitch.EventSub.API.Extensions
                             case ConditionType.CategoryId:
                                 request.Condition.CategoryId = categoryId;
                                 break;*/
-                        case ConditionType.ClientId:
+                        case ConditionTypes.ClientId:
                             request.Condition.ClientId = userId;
                             break;
                         /*case ConditionType.ExtensionClientId:
                             request.Condition.ExtensionClientId = userId;
                             break;*/
-                        case ConditionType.UserId:
+                        case ConditionTypes.UserId:
                             request.Condition.UserId = userId;
                             break;
 
-                        case ConditionType.RewardId:
+                        case ConditionTypes.RewardId:
                             request.Condition.RewardId = rewardId;
                             break;
 
