@@ -4,6 +4,25 @@ using Twitch.EventSub.API.Models;
 using Twitch.EventSub.CoreFunctions;
 using Twitch.EventSub.Interfaces;
 using Twitch.EventSub.Messages.NotificationMessage.Events;
+using Twitch.EventSub.Messages.NotificationMessage.Events.Automod;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelCharity;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelChat;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelCheer;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelGoal;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelGuest;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelHype;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelModerator;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelPoints;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelPoll;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelPrediction;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelShield;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelShoutout;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelSubscription;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelSuspicious;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelUnban;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelVIP;
+using Twitch.EventSub.Messages.NotificationMessage.Events.ChannelWarning;
+using Twitch.EventSub.Messages.NotificationMessage.Events.Stream;
 
 namespace Twitch.EventSub.User
 {
@@ -14,18 +33,23 @@ namespace Twitch.EventSub.User
     public class EventProvider : IEventProvider
     {
         private string _accessToken;
-        private string _clientId;
+        private readonly string _clientId;
         private List<SubscriptionType> _listOfSubs;
-        private ILogger _logger;
-        private string _userId;
+        private readonly ILogger _logger;
+        private readonly string _userId;
         private UserSequencer _userSequencer;
+        private readonly Timer _recoveryTimer;
+        private readonly bool _allowRecovery;
+        private string? _testingApiUrl;
+        private string? _testingWebsocketUrl;
 
         public EventProvider(
             string userId,
             string accessToken,
             List<SubscriptionType> listOfSubs,
             string clientId,
-            ILogger logger)
+            ILogger logger,
+            bool allowRecovery)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(userId, nameof(userId));
             ArgumentException.ThrowIfNullOrWhiteSpace(accessToken, nameof(accessToken));
@@ -37,9 +61,24 @@ namespace Twitch.EventSub.User
             _listOfSubs = listOfSubs;
             _clientId = clientId;
             _logger = logger;
-
+            _recoveryTimer = new(_ => OnRecoveryTimerEnlapsedAsync(), null, Timeout.Infinite, Timeout.Infinite);
+            _allowRecovery = allowRecovery;
             Create();
+        }
 
+        private async void OnRecoveryTimerEnlapsedAsync()
+        {
+            try
+            {
+                if (_userSequencer?.State == UserBase.UserState.Disposed && _allowRecovery == true)
+                {
+                    await StartAsync(_testingApiUrl, _testingWebsocketUrl);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "OnRecoveryTimer failed due {message}", ex.Message);
+            }
         }
 
         /// <summary>
@@ -66,7 +105,7 @@ namespace Twitch.EventSub.User
         /// <summary>
         /// Method to create UserSequencer instance and set up event handlers
         /// </summary>
-        private void Create()
+        private void Create(string? testApiUrl = null, string? testWebsocketUrl = null)
         {
             var listOfRequests = new List<CreateSubscriptionRequest>();
             foreach (var type in _listOfSubs)
@@ -77,7 +116,7 @@ namespace Twitch.EventSub.User
                     Condition = new Condition()
                 }.SetSubscriptionType(type, _userId));
             }
-            _userSequencer = new UserSequencer(_userId, _accessToken, listOfRequests, _clientId, _logger);
+            _userSequencer = new UserSequencer(_userId, _accessToken, listOfRequests, _clientId, _logger, testApiUrl, testWebsocketUrl);
 
             _userSequencer.AccessTokenRequestedEvent += AccessTokenRequestedEventAsync;
             _userSequencer.OnRawMessageRecievedAsync += OnRawMessageReceivedAsync;
@@ -100,13 +139,31 @@ namespace Twitch.EventSub.User
         /// Regenerates Sequencer object, in case if its internaly disposed
         /// </summary>
         /// <returns></returns>
-        internal Task StartAsync()
+        internal Task StartAsync(string testingApiUrl = null, string testingWebsocketUrl = null)
         {
             if (_userSequencer.IsDisposed())
             {
-                Create();
+                _testingApiUrl = testingApiUrl;
+                _testingWebsocketUrl = testingWebsocketUrl;
+                Create(testingApiUrl, testingWebsocketUrl);
             }
+            ResolveRecovery(true);
             return _userSequencer.StartAsync();
+        }
+
+        private void ResolveRecovery(bool shouldRun)
+        {
+            if (_allowRecovery)
+            {
+                if (shouldRun)
+                {
+                    _recoveryTimer.Change(TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
+                }
+                else
+                {
+                    _recoveryTimer.Change(Timeout.Infinite, Timeout.Infinite);
+                }
+            }
         }
 
         /// <summary>
@@ -115,12 +172,13 @@ namespace Twitch.EventSub.User
         /// <returns>Returns true on success, false if object is in invalid state to be stopped.</returns>
         internal Task<bool> StopAsync()
         {
+            ResolveRecovery(false);
             return _userSequencer.StopAsync();
         }
 
         /// <summary>
         /// Updates parameters of userSequencer
-        /// Primary usage is to update Access Token. 
+        /// Primary usage is to update Access Token.
         /// </summary>
         /// <param name="accessToken"></param>
         /// <param name="listOfSubs"></param>
@@ -189,152 +247,215 @@ namespace Twitch.EventSub.User
         {
             switch (e.Event)
             {
-                case UpdateNotificationEvent updateEvent:
-                    await OnUpdateNotificationEventAsync.TryInvoke(sender, updateEvent);
+                case AutomodMessageUpdateEvent automodMessageUpdateEvent:
+                    await OnAutomodMessageUpdateEventAsync.TryInvoke(sender, automodMessageUpdateEvent);
                     break;
 
-                case FollowEvent followEvent:
+                case AutomodMessageHoldEvent automodMessageHoldEvent:
+                    await OnAutomodMessageHoldEventAsync.TryInvoke(sender, automodMessageHoldEvent);
+                    break;
+
+                case AutomodTermsUpdateEvent automodTermsUpdateEvent:
+                    await OnAutomodTermsUpdateEventAsync.TryInvoke(sender, automodTermsUpdateEvent);
+                    break;
+
+                case ChannelAdBreakBeginEvent channelAdBreakBeginEvent:
+                    await OnAdBreakBeginEventAsync.TryInvoke(sender, channelAdBreakBeginEvent);
+                    break;
+
+                case ChannelChatMessageDeleteEvent channelChatMessageDeleteEvent:
+                    await OnChatMessageDeleteEventAsync.TryInvoke(sender, channelChatMessageDeleteEvent);
+                    break;
+
+                case ChannelChatNotificationEvent channelChatNotificationEvent:
+                    await OnChatNotificationEventAsync.TryInvoke(sender, channelChatNotificationEvent);
+                    break;
+
+                case ChannelChatSettingsUpdateEvent channelChatSettingsUpdateEvent:
+                    await OnChatSettingsUpdateEventAsync.TryInvoke(sender, channelChatSettingsUpdateEvent);
+                    break;
+
+                case ChannelSuspiciousUserMessageEvent channelSuspiciousUserMessageEvent:
+                    await OnSuspiciousUserMessageEventAsync.TryInvoke(sender, channelSuspiciousUserMessageEvent);
+                    break;
+
+                case ChannelSuspiciousUserUpdateEvent channelSuspiciousUserUpdateEvent:
+                    await OnSuspiciousUserUpdateEventAsync.TryInvoke(sender, channelSuspiciousUserUpdateEvent);
+                    break;
+
+                case ConduitShardDisabledEvent ConduitShardDisabledEvent:
+                    await OnConduitShardDisabledEventAsync.TryInvoke(sender, ConduitShardDisabledEvent);
+                    break;
+
+                case ChannelUpdateEvent updateEvent:
+                    await OnUpdateEventAsync.TryInvoke(sender, updateEvent);
+                    break;
+
+                case ChannelFollowEvent followEvent:
                     await OnFollowEventAsync.TryInvoke(sender, followEvent);
                     break;
 
-                case SubscribeEndEvent subscribeEndEvent:
+                case ChannelSubscriptionEndEvent subscribeEndEvent:
                     await OnSubscribeEndEventAsync.TryInvoke(sender, subscribeEndEvent);
                     break;
 
-                case SubscribeEvent subscribeEvent:
+                case ChannelSubscribeEvent subscribeEvent:
                     await OnSubscribeEventAsync.TryInvoke(sender, subscribeEvent);
                     break;
 
-                case ChannelChatMessage channelChatMessage:
-                    await OnChannelChatEventAsync.TryInvoke(sender, channelChatMessage);
+                case ChannelChatUserMessageHoldEvent messageHoldEvent:
+                    await OnChatUserMessageHoldEventAsync.TryInvoke(sender, messageHoldEvent);
                     break;
 
-                case SubscriptionGiftEvent subscriptionGiftEvent:
+                case ChannelChatUserMessageUpdateEvent messageHoldEvent:
+                    await OnChatUserMessageUpdateEventAsync.TryInvoke(sender, messageHoldEvent);
+                    break;
+
+                case ChannelChatMessageEvent channelChatMessage:
+                    await OnChatEventAsync.TryInvoke(sender, channelChatMessage);
+                    break;
+
+                case ChannelChatClearEvent clearEvent:
+                    await OnChatClearEventAsync.TryInvoke(sender, clearEvent);
+                    break;
+
+                case ChannelChatClearUserMessagesEvent clearUserMessagesEvent:
+                    await OnChatClearUserMessages.TryInvoke(sender, clearUserMessagesEvent);
+                    break;
+
+                case ChannelSubscriptionGiftEvent subscriptionGiftEvent:
                     await OnSubscriptionGiftEventAsync.TryInvoke(sender, subscriptionGiftEvent);
                     break;
 
-                case SubscriptionMessageEvent subscriptionMessageEvent:
+                case ChannelSubscriptionMessageEvent subscriptionMessageEvent:
                     await OnSubscriptionMessageEventAsync.TryInvoke(sender, subscriptionMessageEvent);
                     break;
 
-                case CheerEvent cheerEvent:
+                case ChannelCheerEvent cheerEvent:
                     await OnCheerEventAsync.TryInvoke(sender, cheerEvent);
                     break;
 
-                case RaidEvent raidEvent:
+                case ChannelRaidEvent raidEvent:
                     await OnRaidEventAsync.TryInvoke(sender, raidEvent);
                     break;
 
-                case BanEvent banEvent:
+                case ChannelBanEvent banEvent:
                     await OnBanEventAsync.TryInvoke(sender, banEvent);
                     break;
 
-                case UnBanEvent unBanEvent:
-                    await OnUnBanEventAsync.TryInvoke(sender, unBanEvent);
+                case ChannelUnbanEvent unbanEvent:
+                    await OnUnbanEventAsync.TryInvoke(sender, unbanEvent);
                     break;
 
-                case ModeratorRemoveEvent moderatorRemoveEvent:
+                case ChannelUnbanRequestCreateEvent unbanCreateEvent:
+                    await OnUnbanRequestCreateEventAsync.TryInvoke(sender, unbanCreateEvent);
+                    break;
+
+                case ChannelUnbanRequestResolveEvent unBanResolveEvent:
+                    await OnUnbanRequestResolveEventAsync.TryInvoke(sender, unBanResolveEvent);
+                    break;
+
+                case ChannelModeratorRemoveEvent moderatorRemoveEvent:
                     await OnModeratorRemoveEventAsync.TryInvoke(sender, moderatorRemoveEvent);
                     break;
 
-                case ModeratorAddEvent moderatorAddEvent:
+                case ChannelModeratorAddEvent moderatorAddEvent:
                     await OnModeratorAddEventAsync.TryInvoke(sender, moderatorAddEvent);
                     break;
 
-                case GuestStarSessionEndEvent guestStarSessionEndEvent:
+                case ChannelGuestStarSessionEndEvent guestStarSessionEndEvent:
                     await OnGuestStarSessionEndEventAsync.TryInvoke(sender, guestStarSessionEndEvent);
                     break;
 
-                case GuestStarSessionBeginEvent guestStarSessionBeginEvent:
+                case ChannelGuestStarSessionBeginEvent guestStarSessionBeginEvent:
                     await OnGuestStarSessionBeginEventAsync.TryInvoke(sender, guestStarSessionBeginEvent);
                     break;
 
-
-                case GuestStarGuestUpdateEvent guestStarGuestUpdateEvent:
+                case ChannelGuestStarGuestUpdateEvent guestStarGuestUpdateEvent:
                     await OnGuestStarGuestUpdateEventAsync.TryInvoke(sender, guestStarGuestUpdateEvent);
                     break;
 
-                case GuestStarSlotUpdateEvent guestStarSlotUpdateEvent:
-                    await OnGuestStarSlotUpdateEventAsync.TryInvoke(sender, guestStarSlotUpdateEvent);
-                    break;
-
-                case GuestStarSettingsUpdateEvent guestStarSettingsUpdateEvent:
+                case ChannelGuestStarSettingsUpdateEvent guestStarSettingsUpdateEvent:
                     await OnGuestStarSettingsUpdateEventAsync.TryInvoke(sender, guestStarSettingsUpdateEvent);
                     break;
 
-                case PointsCustomRewardUpdateEvent customRewardUpdateEvent:
+                case ChannelPointsAutomaticRewardRedemptionAddEvent channelPointsAutomaticRewardRedemptionAddEvent:
+                    await OnPointsAutomaticRewardRedemptionAddEventAsync.TryInvoke(sender, channelPointsAutomaticRewardRedemptionAddEvent);
+                    break;
+
+                case ChannelPointsCustomRewardUpdateEvent customRewardUpdateEvent:
                     await OnPointsCustomRewardUpdateEventAsync.TryInvoke(sender, customRewardUpdateEvent);
                     break;
 
-                case PointsCustomRewardRemoveEvent customRewardRemoveEvent:
+                case ChannelPointsCustomRewardRemoveEvent customRewardRemoveEvent:
                     await OnPointsCustomRewardRemoveEventAsync.TryInvoke(sender, customRewardRemoveEvent);
                     break;
 
-                case PointsCustomRewardRedemptionUpdateEvent customRewardRedemptionUpdateEvent:
+                case ChannelPointsCustomRewardRedemptionUpdateEvent customRewardRedemptionUpdateEvent:
                     await OnPointsCustomRewardRedemptionUpdateEventAsync.TryInvoke(sender, customRewardRedemptionUpdateEvent);
                     break;
 
-                case PointsCustomRewardRedemptionAddEvent customRewardRedemptionAddEvent:
+                case ChannelPointsCustomRewardRedemptionAddEvent customRewardRedemptionAddEvent:
                     await OnPointsCustomRewardRedemptionAddEventAsync.TryInvoke(sender, customRewardRedemptionAddEvent);
                     break;
 
-                case PointsCustomRewardAddEvent customRewardAddEvent:
+                case ChannelPointsCustomRewardAddEvent customRewardAddEvent:
                     await OnPointsCustomRewardAddEventAsync.TryInvoke(sender, customRewardAddEvent);
                     break;
 
-                case PollProgressEvent pollProgressEvent:
+                case ChannelPollProgressEvent pollProgressEvent:
                     await OnPollProgressEventAsync.TryInvoke(sender, pollProgressEvent);
                     break;
 
-                case PollEndEvent pollEndEvent:
+                case ChannelPollEndEvent pollEndEvent:
                     await OnPollEndEventAsync.TryInvoke(sender, pollEndEvent);
                     break;
 
-                case PollBeginEvent pollBeginEvent:
+                case ChannelPollBeginEvent pollBeginEvent:
                     await OnPollBeginEventAsync.TryInvoke(sender, pollBeginEvent);
                     break;
 
-                case PredictionProgressEvent predictionProgressEvent:
+                case ChannelPredictionProgressEvent predictionProgressEvent:
                     await OnPredictionProgressEventAsync.TryInvoke(sender, predictionProgressEvent);
                     break;
 
-                case PredictionLockEvent predictionLockEvent:
+                case ChannelPredictionLockEvent predictionLockEvent:
                     await OnPredictionLockEventAsync.TryInvoke(sender, predictionLockEvent);
                     break;
 
-                case PredictionEndEvent predictionEndEvent:
+                case ChannelPredictionEndEvent predictionEndEvent:
                     await OnPredictionEndEventAsync.TryInvoke(sender, predictionEndEvent);
                     break;
 
-                case PredictionBeginEvent predictionBeginEvent:
+                case ChannelPredictionBeginEvent predictionBeginEvent:
                     await OnPredictionBeginEventAsync.TryInvoke(sender, predictionBeginEvent);
                     break;
 
-                case HypeTrainProgressEvent hypeTrainProgressEvent:
+                case ChannelHypeTrainProgressEvent hypeTrainProgressEvent:
                     await OnHypeTrainProgressEventAsync.TryInvoke(sender, hypeTrainProgressEvent);
                     break;
 
-                case HypeTrainEndEvent hypeTrainEndEvent:
+                case ChannelHypeTrainEndEvent hypeTrainEndEvent:
                     await OnHypeTrainEndEventAsync.TryInvoke(sender, hypeTrainEndEvent);
                     break;
 
-                case HypeTrainBeginEvent hypeTrainBeginEvent:
+                case ChannelHypeTrainBeginEvent hypeTrainBeginEvent:
                     await OnHypeTrainBeginEventAsync.TryInvoke(sender, hypeTrainBeginEvent);
                     break;
 
-                case CharityCampaignStartEvent charityCampaignStartEvent:
+                case ChannelCharityCampaignStartEvent charityCampaignStartEvent:
                     await OnCharityCampaignStartEventAsync.TryInvoke(sender, charityCampaignStartEvent);
                     break;
 
-                case CharityCampaignProgressEvent charityCampaignProgressEvent:
+                case ChannelCharityCampaignProgressEvent charityCampaignProgressEvent:
                     await OnCharityCampaignProgressEventAsync.TryInvoke(sender, charityCampaignProgressEvent);
                     break;
 
-                case CharityCampaignStopEvent charityCampaignStopEvent:
+                case ChannelCharityCampaignStopEvent charityCampaignStopEvent:
                     await OnCharityCampaignStopEventAsync.TryInvoke(sender, charityCampaignStopEvent);
                     break;
 
-                case CharityDonationEvent charityDonationEvent:
+                case ChannelCharityDonationEvent charityDonationEvent:
                     await OnCharityDonationEventAsync.TryInvoke(sender, charityDonationEvent);
                     break;
 
@@ -347,32 +468,31 @@ namespace Twitch.EventSub.User
                 //    await OnExtensionBitsTransactionCreateEventAsync.TryInvoke(sender, bitsTransactionCreateEvent);
                 //    break;
 
-
-                case GoalProgressEvent goalProgressEvent:
+                case ChannelGoalProgressEvent goalProgressEvent:
                     await OnGoalProgressEventAsync.TryInvoke(sender, goalProgressEvent);
                     break;
 
-                case GoalEndEvent goalEndEvent:
+                case ChannelGoalEndEvent goalEndEvent:
                     await OnGoalEndEventAsync.TryInvoke(sender, goalEndEvent);
                     break;
 
-                case GoalBeginEvent goalBeginEvent:
+                case ChannelGoalBeginEvent goalBeginEvent:
                     await OnGoalBeginEventAsync.TryInvoke(sender, goalBeginEvent);
                     break;
 
-                case ShieldModeEndEvent shieldModeEndEvent:
+                case ChannelShieldModeEndEvent shieldModeEndEvent:
                     await OnShieldModeEndEventAsync.TryInvoke(sender, shieldModeEndEvent);
                     break;
 
-                case ShieldModeBeginEvent shieldModeBeginEvent:
+                case ChannelShieldModeBeginEvent shieldModeBeginEvent:
                     await OnShieldModeBeginEventAsync.TryInvoke(sender, shieldModeBeginEvent);
                     break;
 
-                case ShoutoutCreateEvent shoutoutCreateEvent:
+                case ChannelShoutoutCreateEvent shoutoutCreateEvent:
                     await OnShoutoutCreateEventAsync.TryInvoke(sender, shoutoutCreateEvent);
                     break;
 
-                case ShoutoutReceivedEvent shoutoutReceivedEvent:
+                case ChannelShoutoutReceivedEvent shoutoutReceivedEvent:
                     await OnShoutoutReceivedEventAsync.TryInvoke(sender, shoutoutReceivedEvent);
                     break;
 
@@ -382,6 +502,22 @@ namespace Twitch.EventSub.User
 
                 case StreamOfflineEvent streamOfflineEvent:
                     await OnStreamOfflineEventAsync.TryInvoke(sender, streamOfflineEvent);
+                    break;
+
+                case ChannelVIPAddEvent vipAddEvent:
+                    await OnVIPAddEventAsync.TryInvoke(sender, vipAddEvent);
+                    break;
+
+                case ChannelVIPRemoveEvent vipRemoveEvent:
+                    await OnVIPRemoveEventAsync.TryInvoke(sender, vipRemoveEvent);
+                    break;
+
+                case ChannelWarningAcknowledgeEvent warningAcknowledgeEvent:
+                    await OnWarningAcknowledgeEventAsync.TryInvoke(sender, warningAcknowledgeEvent);
+                    break;
+
+                case ChannelWarningSendEvent channelWarningSendEvent:
+                    await OnWarningSendEventAsync.TryInvoke(sender, channelWarningSendEvent);
                     break;
                 //Cant be used by websocket
 
@@ -393,13 +529,12 @@ namespace Twitch.EventSub.User
                 //    await OnUserAuthorizationRevokeEventAsync.TryInvoke(sender, userAuthorizationRevokeEvent);
                 //    break;
 
-                //User update doesnt maintain proper structure. 
+                //User update doesnt maintain proper structure.
                 //NOT SUPPORTED
 
                 //case UserUpdateEvent userUpdateEvent:
                 //    await OnUserUpdateEventAsync.TryInvoke(sender, userUpdateEvent);
                 //    break;
-
 
                 default:
                     throw new NotImplementedException();
@@ -408,61 +543,144 @@ namespace Twitch.EventSub.User
 
         #region Available events
 
-        public event AsyncEventHandler<UpdateNotificationEvent> OnUpdateNotificationEventAsync;
-        public event AsyncEventHandler<FollowEvent> OnFollowEventAsync;
-        public event AsyncEventHandler<ChannelChatMessage> OnChannelChatEventAsync;
-        public event AsyncEventHandler<SubscribeEvent> OnSubscribeEventAsync;
-        public event AsyncEventHandler<SubscribeEndEvent> OnSubscribeEndEventAsync;
-        public event AsyncEventHandler<SubscriptionGiftEvent> OnSubscriptionGiftEventAsync;
-        public event AsyncEventHandler<SubscriptionMessageEvent> OnSubscriptionMessageEventAsync;
-        public event AsyncEventHandler<CheerEvent> OnCheerEventAsync;
-        public event AsyncEventHandler<RaidEvent> OnRaidEventAsync;
-        public event AsyncEventHandler<BanEvent> OnBanEventAsync;
-        public event AsyncEventHandler<UnBanEvent> OnUnBanEventAsync;
-        public event AsyncEventHandler<ModeratorAddEvent> OnModeratorAddEventAsync;
-        public event AsyncEventHandler<ModeratorRemoveEvent> OnModeratorRemoveEventAsync;
-        public event AsyncEventHandler<GuestStarSessionBeginEvent> OnGuestStarSessionBeginEventAsync;
-        public event AsyncEventHandler<GuestStarSessionEndEvent> OnGuestStarSessionEndEventAsync;
-        public event AsyncEventHandler<GuestStarGuestUpdateEvent> OnGuestStarGuestUpdateEventAsync;
-        public event AsyncEventHandler<GuestStarSlotUpdateEvent> OnGuestStarSlotUpdateEventAsync;
-        public event AsyncEventHandler<GuestStarSettingsUpdateEvent> OnGuestStarSettingsUpdateEventAsync;
-        public event AsyncEventHandler<PointsCustomRewardAddEvent> OnPointsCustomRewardAddEventAsync;
-        public event AsyncEventHandler<PointsCustomRewardUpdateEvent> OnPointsCustomRewardUpdateEventAsync;
-        public event AsyncEventHandler<PointsCustomRewardRemoveEvent> OnPointsCustomRewardRemoveEventAsync;
-        public event AsyncEventHandler<PointsCustomRewardRedemptionAddEvent> OnPointsCustomRewardRedemptionAddEventAsync;
-        public event AsyncEventHandler<PointsCustomRewardRedemptionUpdateEvent> OnPointsCustomRewardRedemptionUpdateEventAsync;
-        public event AsyncEventHandler<PollBeginEvent> OnPollBeginEventAsync;
-        public event AsyncEventHandler<PollProgressEvent> OnPollProgressEventAsync;
-        public event AsyncEventHandler<PollEndEvent> OnPollEndEventAsync;
-        public event AsyncEventHandler<PredictionBeginEvent> OnPredictionBeginEventAsync;
-        public event AsyncEventHandler<PredictionProgressEvent> OnPredictionProgressEventAsync;
-        public event AsyncEventHandler<PredictionLockEvent> OnPredictionLockEventAsync;
-        public event AsyncEventHandler<PredictionEndEvent> OnPredictionEndEventAsync;
-        public event AsyncEventHandler<CharityDonationEvent> OnCharityDonationEventAsync;
-        public event AsyncEventHandler<CharityCampaignStartEvent> OnCharityCampaignStartEventAsync;
-        public event AsyncEventHandler<CharityCampaignProgressEvent> OnCharityCampaignProgressEventAsync;
+        public event AsyncEventHandler<AutomodMessageHoldEvent> OnAutomodMessageHoldEventAsync;
 
-        public event AsyncEventHandler<CharityCampaignStopEvent> OnCharityCampaignStopEventAsync;
+        public event AsyncEventHandler<ChannelUnbanRequestCreateEvent> OnUnbanRequestCreateEventAsync;
+
+        public event AsyncEventHandler<ChannelUnbanRequestResolveEvent> OnUnbanRequestResolveEventAsync;
+
+        public event AsyncEventHandler<ChannelChatClearUserMessagesEvent> OnChatClearUserMessages;
+
+        public event AsyncEventHandler<ChannelChatSettingsUpdateEvent> OnChatSettingsUpdateEventAsync;
+
+        public event AsyncEventHandler<AutomodMessageUpdateEvent> OnAutomodMessageUpdateEventAsync;
+
+        public event AsyncEventHandler<AutomodTermsUpdateEvent> OnAutomodTermsUpdateEventAsync;
+
+        public event AsyncEventHandler<ChannelAdBreakBeginEvent> OnAdBreakBeginEventAsync;
+
+        public event AsyncEventHandler<ChannelChatMessageDeleteEvent> OnChatMessageDeleteEventAsync;
+
+        public event AsyncEventHandler<ChannelChatNotificationEvent> OnChatNotificationEventAsync;
+
+        public event AsyncEventHandler<ChannelSuspiciousUserMessageEvent> OnSuspiciousUserMessageEventAsync;
+
+        public event AsyncEventHandler<ChannelSuspiciousUserUpdateEvent> OnSuspiciousUserUpdateEventAsync;
+
+        public event AsyncEventHandler<ChannelVIPAddEvent> OnVIPAddEventAsync;
+
+        public event AsyncEventHandler<ChannelVIPRemoveEvent> OnVIPRemoveEventAsync;
+
+        public event AsyncEventHandler<ChannelWarningAcknowledgeEvent> OnWarningAcknowledgeEventAsync;
+
+        public event AsyncEventHandler<ChannelWarningSendEvent> OnWarningSendEventAsync;
+
+        public event AsyncEventHandler<ConduitShardDisabledEvent> OnConduitShardDisabledEventAsync;
+
+        public event AsyncEventHandler<ChannelUpdateEvent> OnUpdateEventAsync;
+
+        public event AsyncEventHandler<ChannelFollowEvent> OnFollowEventAsync;
+
+        public event AsyncEventHandler<ChannelChatUserMessageHoldEvent> OnChatUserMessageHoldEventAsync;
+
+        public event AsyncEventHandler<ChannelChatUserMessageUpdateEvent> OnChatUserMessageUpdateEventAsync;
+
+        public event AsyncEventHandler<ChannelChatClearEvent> OnChatClearEventAsync;
+
+        public event AsyncEventHandler<ChannelChatMessageEvent> OnChatEventAsync;
+
+        public event AsyncEventHandler<ChannelSubscribeEvent> OnSubscribeEventAsync;
+
+        public event AsyncEventHandler<ChannelSubscriptionEndEvent> OnSubscribeEndEventAsync;
+
+        public event AsyncEventHandler<ChannelSubscriptionGiftEvent> OnSubscriptionGiftEventAsync;
+
+        public event AsyncEventHandler<ChannelSubscriptionMessageEvent> OnSubscriptionMessageEventAsync;
+
+        public event AsyncEventHandler<ChannelCheerEvent> OnCheerEventAsync;
+
+        public event AsyncEventHandler<ChannelRaidEvent> OnRaidEventAsync;
+
+        public event AsyncEventHandler<ChannelBanEvent> OnBanEventAsync;
+
+        public event AsyncEventHandler<ChannelUnbanEvent> OnUnbanEventAsync;
+
+        public event AsyncEventHandler<ChannelModeratorAddEvent> OnModeratorAddEventAsync;
+
+        public event AsyncEventHandler<ChannelModeratorRemoveEvent> OnModeratorRemoveEventAsync;
+
+        public event AsyncEventHandler<ChannelGuestStarSessionBeginEvent> OnGuestStarSessionBeginEventAsync;
+
+        public event AsyncEventHandler<ChannelGuestStarSessionEndEvent> OnGuestStarSessionEndEventAsync;
+
+        public event AsyncEventHandler<ChannelGuestStarGuestUpdateEvent> OnGuestStarGuestUpdateEventAsync;
+
+        public event AsyncEventHandler<ChannelGuestStarSettingsUpdateEvent> OnGuestStarSettingsUpdateEventAsync;
+
+        public event AsyncEventHandler<ChannelPointsAutomaticRewardRedemptionAddEvent> OnPointsAutomaticRewardRedemptionAddEventAsync;
+
+        public event AsyncEventHandler<ChannelPointsCustomRewardAddEvent> OnPointsCustomRewardAddEventAsync;
+
+        public event AsyncEventHandler<ChannelPointsCustomRewardUpdateEvent> OnPointsCustomRewardUpdateEventAsync;
+
+        public event AsyncEventHandler<ChannelPointsCustomRewardRemoveEvent> OnPointsCustomRewardRemoveEventAsync;
+
+        public event AsyncEventHandler<ChannelPointsCustomRewardRedemptionAddEvent> OnPointsCustomRewardRedemptionAddEventAsync;
+
+        public event AsyncEventHandler<ChannelPointsCustomRewardRedemptionUpdateEvent> OnPointsCustomRewardRedemptionUpdateEventAsync;
+
+        public event AsyncEventHandler<ChannelPollBeginEvent> OnPollBeginEventAsync;
+
+        public event AsyncEventHandler<ChannelPollProgressEvent> OnPollProgressEventAsync;
+
+        public event AsyncEventHandler<ChannelPollEndEvent> OnPollEndEventAsync;
+
+        public event AsyncEventHandler<ChannelPredictionBeginEvent> OnPredictionBeginEventAsync;
+
+        public event AsyncEventHandler<ChannelPredictionProgressEvent> OnPredictionProgressEventAsync;
+
+        public event AsyncEventHandler<ChannelPredictionLockEvent> OnPredictionLockEventAsync;
+
+        public event AsyncEventHandler<ChannelPredictionEndEvent> OnPredictionEndEventAsync;
+
+        public event AsyncEventHandler<ChannelCharityDonationEvent> OnCharityDonationEventAsync;
+
+        public event AsyncEventHandler<ChannelCharityCampaignStartEvent> OnCharityCampaignStartEventAsync;
+
+        public event AsyncEventHandler<ChannelCharityCampaignProgressEvent> OnCharityCampaignProgressEventAsync;
+
+        public event AsyncEventHandler<ChannelCharityCampaignStopEvent> OnCharityCampaignStopEventAsync;
 
         //public event AsyncEventHandler<DropEntitlementGrantEvent> OnDropEntitlementGrantEventAsync;
         //public event AsyncEventHandler<ExtensionBitsTransactionCreateEvent> OnExtensionBitsTransactionCreateEventAsync;
-        public event AsyncEventHandler<GoalBeginEvent> OnGoalBeginEventAsync;
-        public event AsyncEventHandler<GoalProgressEvent> OnGoalProgressEventAsync;
-        public event AsyncEventHandler<GoalEndEvent> OnGoalEndEventAsync;
-        public event AsyncEventHandler<HypeTrainBeginEvent> OnHypeTrainBeginEventAsync;
-        public event AsyncEventHandler<HypeTrainProgressEvent> OnHypeTrainProgressEventAsync;
-        public event AsyncEventHandler<HypeTrainEndEvent> OnHypeTrainEndEventAsync;
-        public event AsyncEventHandler<ShieldModeBeginEvent> OnShieldModeBeginEventAsync;
-        public event AsyncEventHandler<ShieldModeEndEvent> OnShieldModeEndEventAsync;
-        public event AsyncEventHandler<ShoutoutCreateEvent> OnShoutoutCreateEventAsync;
-        public event AsyncEventHandler<ShoutoutReceivedEvent> OnShoutoutReceivedEventAsync;
+        public event AsyncEventHandler<ChannelGoalBeginEvent> OnGoalBeginEventAsync;
+
+        public event AsyncEventHandler<ChannelGoalProgressEvent> OnGoalProgressEventAsync;
+
+        public event AsyncEventHandler<ChannelGoalEndEvent> OnGoalEndEventAsync;
+
+        public event AsyncEventHandler<ChannelHypeTrainBeginEvent> OnHypeTrainBeginEventAsync;
+
+        public event AsyncEventHandler<ChannelHypeTrainProgressEvent> OnHypeTrainProgressEventAsync;
+
+        public event AsyncEventHandler<ChannelHypeTrainEndEvent> OnHypeTrainEndEventAsync;
+
+        public event AsyncEventHandler<ChannelShieldModeBeginEvent> OnShieldModeBeginEventAsync;
+
+        public event AsyncEventHandler<ChannelShieldModeEndEvent> OnShieldModeEndEventAsync;
+
+        public event AsyncEventHandler<ChannelShoutoutCreateEvent> OnShoutoutCreateEventAsync;
+
+        public event AsyncEventHandler<ChannelShoutoutReceivedEvent> OnShoutoutReceivedEventAsync;
+
         public event AsyncEventHandler<StreamOnlineEvent> OnStreamOnlineEventAsync;
 
         public event AsyncEventHandler<StreamOfflineEvent> OnStreamOfflineEventAsync;
+
         //public event AsyncEventHandler<UserAuthorizationGrantEvent> OnUserAuthorizationGrantEventAsync;
         //public event AsyncEventHandler<UserAuthorizationRevokeEvent> OnUserAuthorizationRevokeEventAsync;
         //public event AsyncEventHandler<UserUpdateEvent> OnUserUpdateEventAsync;
 
-        #endregion
+        #endregion Available events
     }
 }

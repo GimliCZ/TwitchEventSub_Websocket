@@ -2,13 +2,18 @@
 {
     public enum SubscriptionType
     {
+        AutomodMessageHold,
+
         // Channel Subscriptions
+        ConduitShardDisabled,
+
         ChannelUpdate,
         ChannelFollow,
         ChannelAdBreakBegin,
         ChannelChatClear,
         ChannelChatClearUserMessages,
         ChannelChatMessage,
+        ChannelChatUserMessageHold,
         ChannelChatMessageDelete,
         ChannelChatNotification,
         ChannelSubscribe,
@@ -19,19 +24,27 @@
         ChannelRaid,
         ChannelBan,
         ChannelUnban,
+        ChannelUnbanCreate,
+        ChannelUnbanResolve,
         ChannelModeratorAdd,
         ChannelModeratorRemove,
+        ChannelVIPAdd,
+        ChannelVIPRemove,
+        ChannelWarningAcknowledge,
+        ChannelWarningSend,
+        ChannelChatUserMessageUpdate,
+        ChannelPointsAutomaticRewardRedemptionAdd,
 
-        // Beta Channel Guest Star
-        BetaChannelChatSettingsUpdate,
+        //Beta
         BetaChannelGuestStarSessionBegin,
+
         BetaChannelGuestStarSessionEnd,
         BetaChannelGuestStarGuestUpdate,
-        BetaChannelGuestStarSlotUpdate,
         BetaChannelGuestStarSettingsUpdate,
 
         // Channel Points
         ChannelPointsCustomRewardAdd,
+
         ChannelPointsCustomRewardUpdate,
         ChannelPointsCustomRewardRemove,
         ChannelPointsCustomRewardRedemptionAdd,
@@ -39,23 +52,26 @@
 
         // Channel Poll
         ChannelPollBegin,
+
         ChannelPollProgress,
         ChannelPollEnd,
 
         // Channel Prediction
         ChannelPredictionBegin,
+
         ChannelPredictionProgress,
         ChannelPredictionLock,
         ChannelPredictionEnd,
 
         // Charity
         CharityDonation,
+
         CharityCampaignStart,
         CharityCampaignProgress,
         CharityCampaignStop,
 
         //webhook only
-        /* 
+        /*
         // Drop Entitlement Grant
         DropEntitlementGrant,
 
@@ -65,24 +81,29 @@
 
         // Channel Goal
         ChannelGoalBegin,
+
         ChannelGoalProgress,
         ChannelGoalEnd,
 
         // Channel Hype Train
         ChannelHypeTrainBegin,
+
         ChannelHypeTrainProgress,
         ChannelHypeTrainEnd,
 
         // Channel Shield Mode
         ChannelShieldModeBegin,
+
         ChannelShieldModeEnd,
 
         // Channel Shoutout
         ChannelShoutoutCreate,
+
         ChannelShoutoutReceived,
 
         // Stream
-        StreamOnline,
+        SuspiciousUserUpdate,
+
         StreamOffline,
 
         //webhook only
@@ -93,6 +114,12 @@
         */
 
         // User Update
-        UserUpdate
+        UserUpdate,
+
+        AutomodMessageUpdate,
+        AutomodTermsUpdate,
+        SuspiciousUserMessage,
+        ChannelChatSettingsUpdate,
+        StreamOnline
     }
 }

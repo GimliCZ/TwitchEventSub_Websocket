@@ -1,5 +1,5 @@
-﻿using System.Collections.Concurrent;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
+using System.Collections.Concurrent;
 using Twitch.EventSub.API.Models;
 using Twitch.EventSub.CoreFunctions;
 using Twitch.EventSub.Interfaces;
@@ -54,15 +54,17 @@ namespace Twitch.EventSub
         /// <param name="userId">The user ID.</param>
         /// <param name="accessToken">The access token.</param>
         /// <param name="listOfSubs">The list of subscription types.</param>
+        /// <param name="allowRecovery">Allow internal recovery attempts.</param>
         /// <returns>A task representing the asynchronous operation, with a result indicating success or failure.</returns>
         public async Task<bool> AddUserAsync(
             string userId,
             string accessToken,
-            List<SubscriptionType> listOfSubs)
+            List<SubscriptionType> listOfSubs,
+            bool allowRecovery)
         {
             if (string.IsNullOrWhiteSpace(userId))
             {
-                _logger.LogErrorDetails("AddUser Failed due null or empty key",  userId);
+                _logger.LogErrorDetails("AddUser Failed due null or empty key", userId);
                 return false;
             }
             if (_eventDictionary.ContainsKey(userId))
@@ -71,7 +73,7 @@ namespace Twitch.EventSub
                 return false;
             }
 
-            var eventProvider = new EventProvider(userId, accessToken, listOfSubs, _clientId, _logger);
+            var eventProvider = new EventProvider(userId, accessToken, listOfSubs, _clientId, _logger, allowRecovery);
             _logger.LogDebug("Attempting to add user");
             return _eventDictionary.TryAdd(userId, eventProvider);
         }

@@ -55,17 +55,19 @@ namespace Twitch.EventSub.API.Models
         [JsonProperty("method")]
         public string Method { get; set; }
 
-        //webhook
-        //[JsonProperty("callback")]
-        //public string Callback { get; set; }
+        [JsonProperty("session_id", NullValueHandling = NullValueHandling.Ignore)]
+        public string? SessionId { get; set; }
 
-        [JsonProperty("session_id")]
-        public string SessionId { get; set; }
+        [JsonProperty("conduit_id", NullValueHandling = NullValueHandling.Ignore)]
+        public string? ConduitId { get; set; }
 
-        [JsonProperty("connected_at")]
-        public string ConnectedAt { get; set; }
+        [JsonProperty("callback", NullValueHandling = NullValueHandling.Ignore)]
+        public string? Callback;
 
-        [JsonProperty("disconnected_at")]
-        public string DisconnectedAt { get; set; }
+        [JsonProperty("connected_at", NullValueHandling = NullValueHandling.Ignore)]
+        public string? ConnectedAt;
+
+        [JsonProperty("disconnected_at", NullValueHandling = NullValueHandling.Ignore)]
+        public string? DisconnectedAt;
     }
 }

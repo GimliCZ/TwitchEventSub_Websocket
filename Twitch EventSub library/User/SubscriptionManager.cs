@@ -10,13 +10,20 @@ namespace Twitch.EventSub.User
     /// </summary>
     public class SubscriptionManager
     {
+        private readonly string _url;
+
+        public SubscriptionManager(string url = null)
+        {
+            _url = url;
+        }
+
         /// <summary>
         /// Event relaying access token refresh from API
         /// </summary>
         public event AsyncEventHandler<RefreshRequestArgs> OnRefreshTokenRequestAsync;
 
         /// <summary>
-        /// Procedure refreshing subriptions 
+        /// Procedure refreshing subriptions
         /// </summary>
         /// <param name="userId">User ID</param>
         /// <param name="requestedSubscriptions">Requested Subscriptions</param>
@@ -164,7 +171,6 @@ namespace Twitch.EventSub.User
 
                 foreach (var subscription in getSubscriptionsResponse.Data)
                 {
-
                     if (subscription is null)
                     {
                         logger.LogInformation("[EventSubClient] - [SubscriptionManager] Retrieved null Subscription");
@@ -195,7 +201,7 @@ namespace Twitch.EventSub.User
             ILogger logger,
             CancellationTokenSource clSource)
         {
-            Task<bool> TryValidateAsync() => TwitchApi.ValidateTokenAsync(accessToken, clSource, logger);
+            Task<bool> TryValidateAsync() => TwitchApi.ValidateTokenAsync(accessToken, clSource, logger, _url);
             return TryFuncAsync(TryValidateAsync, logger, userId);
         }
 
@@ -217,7 +223,7 @@ namespace Twitch.EventSub.User
             ILogger logger,
             CancellationTokenSource clSource)
         {
-            Task<bool> TrySubscribeAsync() => TwitchApi.SubscribeAsync(clientId, accessToken, create, clSource, logger);
+            Task<bool> TrySubscribeAsync() => TwitchApi.SubscribeAsync(clientId, accessToken, create, clSource, logger, _url);
             return TryFuncAsync(TrySubscribeAsync, logger, userId);
         }
 
@@ -233,7 +239,7 @@ namespace Twitch.EventSub.User
         /// <returns>Returns true, if unsubscribe was successfull</returns>
         private Task<bool> ApiTryUnSubscribeAsync(string clientId, string accessToken, string subId, string userId, ILogger logger, CancellationTokenSource clSource)
         {
-            Task<bool> TryUnSubscribeAsync() => TwitchApi.UnSubscribeAsync(clientId, accessToken, subId, clSource, logger);
+            Task<bool> TryUnSubscribeAsync() => TwitchApi.UnSubscribeAsync(clientId, accessToken, subId, clSource, logger, _url);
             return TryFuncAsync(TryUnSubscribeAsync, logger, userId);
         }
 
@@ -249,10 +255,9 @@ namespace Twitch.EventSub.User
         /// <returns>Returns all subscriptions requested by filter, on fail returns null</returns>
         private Task<List<GetSubscriptionsResponse>?> ApiTryGetAllSubscriptionsAsync(string clientId, string accessToken, string userId, CancellationTokenSource clSource, ILogger logger, StatusProvider.SubscriptionStatus statusSelector)
         {
-            Task<List<GetSubscriptionsResponse>> TryGetAllSubscriptionsAsync() => TwitchApi.GetAllSubscriptionsAsync(clientId, accessToken, clSource, logger, statusSelector);
+            Task<List<GetSubscriptionsResponse>> TryGetAllSubscriptionsAsync() => TwitchApi.GetAllSubscriptionsAsync(clientId, accessToken, clSource, logger, statusSelector, _url);
             return TryFuncAsync(TryGetAllSubscriptionsAsync, logger, userId);
         }
-
 
         /// <summary>
         /// This should catch any AccessToken exception and calls outside for changes.
@@ -273,7 +278,7 @@ namespace Twitch.EventSub.User
             {
                 //procedure must run UpdateOnFly function for proper change
                 logger.LogInformationDetails("[EventSubClient] - [SubscriptionManager] Invalid Access token detected, requesting change.", ex);
-                await OnRefreshTokenRequestAsync.TryInvoke(this, new RefreshRequestArgs{ UserId = UserId, DateTime = DateTime.Now });
+                await OnRefreshTokenRequestAsync.TryInvoke(this, new RefreshRequestArgs { UserId = UserId, DateTime = DateTime.Now });
             }
             catch (TaskCanceledException)
             {

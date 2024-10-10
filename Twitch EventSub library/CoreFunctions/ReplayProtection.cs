@@ -21,7 +21,6 @@ namespace Twitch.EventSub.CoreFunctions
         {
             if (_rememberedMessages?.Contains(data) == true)
             {
-
                 return true;
             }
 
@@ -38,7 +37,6 @@ namespace Twitch.EventSub.CoreFunctions
             var now = DateTime.UtcNow;
             var messageTime = ParseDateTimeString(data);
             return (now - messageTime) < TimeSpan.FromMinutes(10);
-
         }
 
         public static DateTime ParseDateTimeString(string timestamp)
